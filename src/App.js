@@ -1,12 +1,13 @@
 import React from 'react';
-import logo from './logo.svg';
+import { AwesomeButtonSocial } from 'react-awesome-button';
+import AwesomeButtonStyles from 'react-awesome-button/src/styles/styles.scss'
 import './App.css';
 
 function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
+        <AwesomeButtonSocial cssModule={AwesomeButtonStyles} type="facebook">Button</AwesomeButtonSocial>
         <p>
           Roel Dingle
         </p>
