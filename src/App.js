@@ -7,7 +7,7 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <AwesomeButton type="primary">Button</AwesomeButton>
+        <AwesomeButton type="primary">This is a sample button</AwesomeButton>
         <p>
           Roel Dingle
         </p>
