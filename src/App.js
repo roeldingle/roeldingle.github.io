@@ -1,13 +1,13 @@
 import React from 'react';
-import { AwesomeButtonSocial } from 'react-awesome-button';
-import AwesomeButtonStyles from 'react-awesome-button/src/styles/styles.scss'
+import { AwesomeButton } from "react-awesome-button";
+import "react-awesome-button/dist/styles.css";
 import './App.css';
 
 function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <AwesomeButtonSocial cssModule={AwesomeButtonStyles} type="facebook">Button</AwesomeButtonSocial>
+        <AwesomeButton type="primary">Button</AwesomeButton>
         <p>
           Roel Dingle
         </p>
