@@ -4,6 +4,19 @@
   margin-top: 10%;
 }
 
+.menu-button{
+  position:  absolute !important;
+  top:0;
+  right:0;
+  border-radius: 20%;
+  border-left: 1px solid #cacaca !important;
+  border-right: 1px solid #cacaca !important;
+  border-bottom: 1px solid #cacaca !important;
+  margin-right:5px !important;
+  margin-top:-5px !important;
+ color: #000 !important;
+}
+
 .column-left{
   text-align: left;
 }
@@ -12,14 +25,14 @@
   font-size: 4em;
   margin: 0;
   line-height: 1em;
-
+  color:#404040;
 }
 
 .subtitle{
   margin: 10px 0;
   font-size: 1.6em;
   font-weight:100;
-  color:#cacaca;
+  color:#606060;
 }
 
 .sub-container{
@@ -29,11 +42,11 @@
 }
 
 .avatar{
-
+ width:90%;
 }
 
 .social-wrap{
-  margin-top: 20px;
+  margin: 20px 0;
 }
 .social-icon{
   display:inline-block;
@@ -45,11 +58,17 @@
   background:#cacaca;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
+@media (max-width: 640px) {
+  .column-left{
+    text-align: center;
   }
-  to {
-    transform: rotate(360deg);
+  .title{
+    font-size: 3em;
+  }
+  .subtitle{
+    font-size: 1em;
+  }
+  .avatar{
+   width:60%;
   }
 }
