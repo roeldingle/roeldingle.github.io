@@ -99,6 +99,7 @@ section {
 
   #welcome-section .social ul{
     justify-content: center;
+    margin-left: 15px;
   }
   
 }
