@@ -40,6 +40,7 @@ export default function ModuleManager({
 >({});
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -143,11 +144,26 @@ export default function ModuleManager({
     });
     setMessage('');
     setError('');
+    setFormOpen(true);
   }
 
   function resetForm() {
     setEditingId(null);
     setForm(emptyForm);
+  }
+
+  function startCreate() {
+    resetForm();
+    setError('');
+    setMessage('');
+    setFormOpen(true);
+  }
+
+  function closeForm() {
+    if (saving) return;
+    setFormOpen(false);
+    resetForm();
+    setError('');
   }
 
   async function saveModule(event: React.FormEvent<HTMLFormElement>) {
@@ -192,6 +208,7 @@ export default function ModuleManager({
       setError(result.error.message);
     } else {
       setMessage(editingId ? 'Module updated.' : 'Module created.');
+      setFormOpen(false);
       resetForm();
       await refreshModules();
     }
@@ -217,7 +234,7 @@ export default function ModuleManager({
       return;
     }
 
-    if (editingId === module.id) resetForm();
+    if (editingId === module.id) closeForm();
 
     setMessage('Module deleted.');
     await refreshModules();
@@ -243,7 +260,7 @@ export default function ModuleManager({
         className="rd-back-button"
         onClick={onBack}
       >
-        ← Back to Courses
+        &larr; Back to Courses
       </button>
 
       <div className="rd-welcome">
@@ -254,10 +271,17 @@ export default function ModuleManager({
       {error && <p role="alert" className="rd-knowledge-error">{error}</p>}
       {message && <p role="status" className="rd-knowledge-success">{message}</p>}
 
-      <div className="rd-info-card">
-        <h3>{editingId ? 'Edit Module' : 'Create Module'}</h3>
-
-        <form className="rd-knowledge-form" onSubmit={(event) => void saveModule(event)}>
+      {formOpen && (
+        <div className="rd-modal-backdrop" onMouseDown={(event) => {
+          if (event.target === event.currentTarget) closeForm();
+        }}>
+          <div className="rd-modal-panel" role="dialog" aria-modal="true" aria-labelledby="rd-module-modal-title">
+            <div className="rd-modal-heading">
+              <h3 id="rd-module-modal-title">{editingId ? 'Edit Module' : 'Create Module'}</h3>
+              <button type="button" aria-label="Close form" onClick={closeForm} disabled={saving}>×</button>
+            </div>
+            {error && <p role="alert" className="rd-knowledge-error">{error}</p>}
+<form className="rd-knowledge-form" onSubmit={(event) => void saveModule(event)}>
           <label>
             Module Number
             <input
@@ -301,22 +325,23 @@ export default function ModuleManager({
               {saving ? 'Saving...' : editingId ? 'Update Module' : 'Create Module'}
             </button>
 
-            {editingId && (
-              <button type="button" onClick={resetForm}>
-                Cancel
-              </button>
-            )}
+            <button type="button" onClick={closeForm} disabled={saving}>Cancel</button>
           </div>
         </form>
-      </div>
+          </div>
+        </div>
+      )}
 
       <div className="rd-info-card">
-        <h3>Modules ({modules.length})</h3>
+        <div className="rd-modal-heading">
+          <h3>Modules ({modules.length})</h3>
+          <button type="button" className="rd-knowledge-add-button" onClick={startCreate}>+ Add Module</button>
+        </div>
 
         {loading ? (
           <p>Loading modules...</p>
         ) : modules.length === 0 ? (
-          <p>No modules yet. Create Module 00 to get started.</p>
+          <p>No modules yet. Select Add Module to create Module 00.</p>
         ) : (
           <div className="rd-course-grid">
             {modules.map((module) => (
@@ -362,7 +387,7 @@ export default function ModuleManager({
 
                 <div className="rd-knowledge-actions">
                     <button type="button" onClick={() => setSelectedModule(module)}>
-                      Manage Lessons →
+                      Manage Lessons &rarr;
                     </button>
                   <button type="button" onClick={() => startEdit(module)}>
                     Edit

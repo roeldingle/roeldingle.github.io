@@ -166,7 +166,6 @@ export default function RolesEditor() {
 
   return (
     <section className="admin-editor">
-      <h2>Professional Roles</h2>
       <p>Manage the titles displayed on your portfolio.</p>
 
       <form onSubmit={addRole} className="admin-inline-form">

@@ -176,7 +176,6 @@ export default function SkillsEditor() {
 
   return (
     <section className="admin-editor">
-      <h2>Technical Skills</h2>
       <p>Manage the skills and categories displayed on your portfolio.</p>
 
       <form className="admin-inline-form" onSubmit={addSkill}>

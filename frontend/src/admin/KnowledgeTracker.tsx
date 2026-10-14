@@ -38,6 +38,7 @@ export default function KnowledgeTracker({
   >({});
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -145,6 +146,13 @@ export default function KnowledgeTracker({
     };
   }, []);
 
+  function startCreate() {
+    resetForm();
+    setError('');
+    setMessage('');
+    setFormOpen(true);
+  }
+
   function startEdit(course: KnowledgeCourse) {
     setEditingId(course.id);
     setForm({
@@ -154,11 +162,19 @@ export default function KnowledgeTracker({
     });
     setError('');
     setMessage('');
+    setFormOpen(true);
   }
 
   function resetForm() {
     setEditingId(null);
     setForm(emptyForm);
+  }
+
+  function closeForm() {
+    if (saving) return;
+    setFormOpen(false);
+    resetForm();
+    setError('');
   }
 
   async function saveCourse(event: React.FormEvent<HTMLFormElement>) {
@@ -195,6 +211,7 @@ export default function KnowledgeTracker({
     } else {
       setMessage(editingId ? 'Course updated successfully.' : 'Course created successfully.');
       resetForm();
+      setFormOpen(false);
       await loadCourses();
     }
 
@@ -233,6 +250,7 @@ export default function KnowledgeTracker({
       courseTitle={activeCourse.title}
       onBack={() => {
         setSelectedCourse(null);
+        void loadCourseProgress();
         onBackToCourses?.();
         }}
     />
@@ -242,7 +260,6 @@ export default function KnowledgeTracker({
   return (
     <div className="rd-overview">
       <div className="rd-welcome">
-        <h2>Knowledge Tracker</h2>
         <p>
           Organize your private courses, modules, lessons, and learning progress.
         </p>
@@ -251,8 +268,14 @@ export default function KnowledgeTracker({
       {error && <p role="alert" className="rd-knowledge-error">{error}</p>}
       {message && <p role="status" className="rd-knowledge-success">{message}</p>}
 
-      <div className="rd-info-card">
-        <h3>{editingId ? 'Edit Course' : 'Create Course'}</h3>
+      {formOpen && (
+        <div className="rd-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) closeForm(); }}>
+          <div className="rd-modal-panel" role="dialog" aria-modal="true" aria-labelledby="rd-course-modal-title">
+            <div className="rd-modal-heading">
+              <h3 id="rd-course-modal-title">{editingId ? 'Edit Course' : 'Create Course'}</h3>
+              <button type="button" aria-label="Close form" onClick={closeForm} disabled={saving}>×</button>
+            </div>
+            {error && <p role="alert" className="rd-knowledge-error">{error}</p>}
 
         <form className="rd-knowledge-form" onSubmit={(event) => void saveCourse(event)}>
           <label>
@@ -290,22 +313,25 @@ export default function KnowledgeTracker({
               {saving ? 'Saving...' : editingId ? 'Update Course' : 'Create Course'}
             </button>
 
-            {editingId && (
-              <button type="button" onClick={resetForm}>
-                Cancel
-              </button>
-            )}
+            <button type="button" onClick={closeForm} disabled={saving}>Cancel</button>
           </div>
-        </form>
-      </div>
+            </form>
+          </div>
+        </div>
+      )
+    }
+
 
       <div className="rd-info-card">
-        <h3>My Courses</h3>
+        <div className="rd-modal-heading">
+          <h3>My Courses</h3>
+          <button type="button" className="rd-knowledge-add-button" onClick={startCreate}>+ Add Course</button>
+        </div>
 
         {loading ? (
           <p>Loading courses...</p>
         ) : courses.length === 0 ? (
-          <p>No courses yet. Create your first course above.</p>
+          <p>No courses yet. Select Add Course to create one.</p>
         ) : (
           <div className="rd-course-grid">
             {courses.map((course) => (
@@ -350,7 +376,7 @@ export default function KnowledgeTracker({
 
                 <div className="rd-knowledge-actions">
                   <button type="button" onClick={() => setSelectedCourse(course)}>
-                    Manage Modules →
+                    Manage Modules &rarr;
                     </button>
                   <button type="button" onClick={() => startEdit(course)}>
                     Edit
