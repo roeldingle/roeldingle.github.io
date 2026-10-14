@@ -63,7 +63,7 @@ function App() {
       <main>
         <section id="home" className="hero">
           <div className="hero-content">
-
+            <p className="eyebrow">WELCOME TO MY PORTFOLIO</p>
             <h1>{portfolio.name}</h1>
             <h2>{portfolio.headline}</h2>
 
