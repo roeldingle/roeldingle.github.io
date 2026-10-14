@@ -1,12 +1,18 @@
-
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { supabase } from '../lib/supabase';
 import ProfileEditor from './ProfileEditor';
 import RolesEditor from './RolesEditor';
 import SkillsEditor from './SkillsEditor';
 import ProjectsEditor from './ProjectsEditor';
 import './AdminDashboard.css';
+import KnowledgeTracker from './KnowledgeTracker';
 
-type AdminPage = 'overview' | 'profile' | 'roles' | 'skills' | 'projects';
+interface SidebarCourse {
+  id: string;
+  title: string;
+}
+
+type AdminPage = 'overview' | 'profile' | 'roles' | 'skills' | 'projects' | 'knowledge';
 
 interface AdminDashboardProps {
   onLogout: () => Promise<void>;
@@ -18,11 +24,42 @@ const menuItems: { id: AdminPage; label: string; icon: string }[] = [
   { id: 'roles', label: 'Roles', icon: '▣' },
   { id: 'skills', label: 'Skills', icon: '✦' },
   { id: 'projects', label: 'Projects', icon: '▤' },
+  { id: 'knowledge', label: 'Knowledge Tracker', icon: '◈' },
 ];
 
 export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [activePage, setActivePage] = useState<AdminPage>('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [cmsOpen, setCmsOpen] = useState(true);
+  const [knowledgeOpen, setKnowledgeOpen] = useState(true);
+  const [sidebarCourses, setSidebarCourses] = useState<SidebarCourse[]>([]);
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadSidebarCourses() {
+      const { data, error } = await supabase
+        .from('knowledge_courses')
+        .select('id, title')
+        .order('display_order');
+
+      if (!active) return;
+
+      if (error) {
+        console.error('Failed to load sidebar courses:', error.message);
+        return;
+      }
+
+      setSidebarCourses(data ?? []);
+    }
+
+    void loadSidebarCourses();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   function navigate(page: AdminPage) {
     setActivePage(page);
@@ -39,6 +76,13 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
         return <SkillsEditor />;
       case 'projects':
         return <ProjectsEditor />;
+      case 'knowledge':
+        return (
+          <KnowledgeTracker
+            selectedCourseId={selectedCourseId}
+            onBackToCourses={() => setSelectedCourseId(null)}
+          />
+        );
       default:
         return (
           <div className="rd-overview">
@@ -97,20 +141,88 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
         <div className="rd-sidebar-label">WORKSPACE</div>
 
-        <nav className="rd-sidebar-nav" aria-label="Admin navigation">
-          {menuItems.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={`rd-nav-item ${activePage === item.id ? 'active' : ''}`}
-              onClick={() => navigate(item.id)}
-              aria-current={activePage === item.id ? 'page' : undefined}
-            >
-              <span className="rd-nav-icon">{item.icon}</span>
-              {item.label}
-            </button>
-          ))}
-        </nav>
+        
+        <div className="rd-sidebar-navigation">
+          <button
+            type="button"
+            className={`rd-nav-item ${activePage === 'overview' ? 'active' : ''}`}
+            onClick={() => setActivePage('overview')}
+          >
+            <span>▣</span>
+            <span>Dashboard</span>
+          </button>
+
+          <button
+            type="button"
+            className="rd-nav-item rd-nav-parent"
+            aria-expanded={cmsOpen}
+            onClick={() => setCmsOpen((current) => !current)}
+          >
+            <span>▤</span>
+            <span>CMS</span>
+            <span className="rd-nav-chevron">{cmsOpen ? '⌄' : '›'}</span>
+          </button>
+
+          {cmsOpen && (
+            <div className="rd-nav-children">
+              {([
+                ['profile', 'Profile'],
+                ['roles', 'Roles'],
+                ['skills', 'Skills'],
+                ['projects', 'Projects'],
+              ] as const).map(([id, label]) => (
+                <button
+                  type="button"
+                  key={id}
+                  className={`rd-nav-item rd-nav-child ${activePage === id ? 'active' : ''}`}
+                  onClick={() => setActivePage(id)}
+                >
+                  <span>•</span>
+                  <span>{label}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          <button
+            type="button"
+            className="rd-nav-item rd-nav-parent"
+            aria-expanded={knowledgeOpen}
+            onClick={() => {
+              setKnowledgeOpen((current) => !current);
+              setActivePage('knowledge');
+              setSelectedCourseId(null);
+            }}
+          >
+            <span>◈</span>
+            <span>Knowledge Tracker</span>
+            <span className="rd-nav-chevron">{knowledgeOpen ? '⌄' : '›'}</span>
+          </button>
+
+          {knowledgeOpen && (
+            <div className="rd-nav-children">
+              {sidebarCourses.map((course) => (
+                <button
+                  type="button"
+                  key={course.id}
+                  className={`rd-nav-item rd-nav-child ${
+                    activePage === 'knowledge' && selectedCourseId === course.id
+                      ? 'active'
+                      : ''
+                  }`}
+                  onClick={() => {
+                    setActivePage('knowledge');
+                    setSelectedCourseId(course.id);
+                  }}
+                >
+                  <span>◦</span>
+                  <span>{course.title}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
 
         <div className="rd-sidebar-footer">
           <a href="/" target="_blank" rel="noopener noreferrer">
