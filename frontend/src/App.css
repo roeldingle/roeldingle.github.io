@@ -17,6 +17,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
 }
 
 .brand {
@@ -109,7 +112,7 @@
 .content-section {
   max-width: 1200px;
   margin: auto;
-  padding: 55px 32px 85px;
+  padding: 110px 32px 85px;
 }
 
 .content-section h2 {
