@@ -1,7 +1,13 @@
-import { portfolio } from './data/portfolio';
+import { useEffect, useState } from 'react';
+import { portfolio as fallbackPortfolio } from './data/portfolio';
+import { getPortfolio } from './lib/portfolio-service';
 import './App.css';
 
 function App() {
+  // 1. Initialize portfolio data first.
+  const [portfolio, setPortfolio] = useState(fallbackPortfolio);
+
+  // 2. Derive roles and skill categories.
   const sortedRoles = [...portfolio.roles].sort(
     (a, b) => a.displayOrder - b.displayOrder
   );
@@ -9,6 +15,35 @@ function App() {
   const skillCategories = [...new Set(
     portfolio.skills.map((skill) => skill.category)
   )];
+
+  const sortedProjects = [...portfolio.projects].sort(
+    (a, b) => a.displayOrder - b.displayOrder
+  );
+
+  // 3. Load the latest profile from Supabase.
+  useEffect(() => {
+    let active = true;
+
+    async function loadPortfolio() {
+      try {
+        const data = await getPortfolio();
+
+        if (active) {
+          setPortfolio(data);
+        }
+      } catch (error) {
+        console.error('Portfolio loading failed:', error);
+      }
+    }
+
+    void loadPortfolio();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  
 
   return (
     <div className="portfolio-app">
@@ -20,6 +55,7 @@ function App() {
         <nav aria-label="Main navigation">
           <a href="#about">About</a>
           <a href="#skills">Skills</a>
+          <a href="#projects">Projects</a>
           <a href="#ai">Ask My AI</a>
         </nav>
       </header>
@@ -90,6 +126,58 @@ function App() {
                         {skill.name}
                       </span>
                     ))}
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="content-section" id="projects">
+          <div className="section-heading">
+            <p className="eyebrow">THINGS I'VE BUILT</p>
+            <h2>Featured Projects</h2>
+          </div>
+
+          <div className="projects-grid">
+            {sortedProjects.map((project) => (
+              <article className="project-card" key={project.id}>
+                <div className="project-header">
+                  <h3>{project.title}</h3>
+                  <span className="project-status">
+                    {project.status.replace('-', ' ')}
+                  </span>
+                </div>
+
+                <p>{project.description}</p>
+
+                <div className="project-technologies">
+                  {project.technologies.map((technology) => (
+                    <span className="skill-tag" key={technology}>
+                      {technology}
+                    </span>
+                  ))}
+                </div>
+
+                <div className="project-links">
+                  {project.githubUrl && (
+                    <a
+                      href={project.githubUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      GitHub
+                    </a>
+                  )}
+
+                  {project.demoUrl && (
+                    <a
+                      href={project.demoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Live Demo
+                    </a>
+                  )}
                 </div>
               </article>
             ))}
