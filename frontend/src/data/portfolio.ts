@@ -2,12 +2,12 @@ import type { PortfolioProfile } from '../types/portfolio';
 
 export const portfolio: PortfolioProfile = {
   name: 'Roel Dingle',
-  headline: 'DevOps Automation Engineer | Full Stack Developer | AI Engineering',
+  headline: 'Automation Test Engineer | Full Stack Developer | AI Engineering',
   biography:
     'Technology professional with over 16 years of experience in web development, automation, and team leadership.',
 
   roles: [
-    { id: '1', title: 'Senior DevOps Automation Engineer', displayOrder: 1 },
+    { id: '1', title: 'Automation Test Engineer', displayOrder: 1 },
     { id: '2', title: 'Full Stack Web Developer', displayOrder: 2 },
     { id: '3', title: 'AI Engineering Practitioner', displayOrder: 3 },
   ],
