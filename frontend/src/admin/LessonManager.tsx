@@ -38,6 +38,7 @@ export default function LessonManager({
   const [lessons, setLessons] = useState<KnowledgeLesson[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [statusSaving, setStatusSaving] = useState(false);
@@ -149,11 +150,30 @@ export default function LessonManager({
     });
     setError('');
     setMessage('');
+    setFormOpen(true);
   }
 
   function resetForm() {
     setEditingId(null);
     setForm(emptyForm);
+  }
+
+  function startCreate() {
+    resetForm();
+    setError('');
+    setMessage('');
+    setFormOpen(true);
+  }
+
+  function closeForm() {
+    if (saving) return;
+    setFormOpen(false);
+    resetForm();
+    setError('');
+  }
+
+  function closeImporter() {
+    setShowImporter(false);
   }
 
   async function saveLesson(event: React.FormEvent<HTMLFormElement>) {
@@ -207,6 +227,7 @@ export default function LessonManager({
       setError(result.error.message);
     } else {
       setMessage(editingId ? 'Lesson updated.' : 'Lesson created.');
+      setFormOpen(false);
       resetForm();
       await refreshLessons();
     }
@@ -232,7 +253,7 @@ export default function LessonManager({
       return;
     }
 
-    if (editingId === lesson.id) resetForm();
+    if (editingId === lesson.id) closeForm();
     setMessage('Lesson deleted.');
     await refreshLessons();
   }
@@ -277,7 +298,7 @@ export default function LessonManager({
   return (
     <div className="rd-overview">
       <button className="rd-back-button" type="button" onClick={onBack}>
-        ← Back to Modules
+        &larr; Back to Modules
       </button>
 
       <div className="rd-welcome">
@@ -297,29 +318,19 @@ export default function LessonManager({
         />
       </div>
       
-      <div className="rd-knowledge-actions">
-        <button
-          type="button"
-          onClick={() => setShowImporter((current) => !current)}
-        >
-          {showImporter ? 'Hide Importer' : 'Import Lessons'}
-        </button>
-      </div>
-
-      {showImporter && (
-        <LessonImporter
-          moduleId={moduleId}
-          onImported={refreshLessons}
-          onClose={() => setShowImporter(false)}
-        />
-      )}
-
-      {error && <p className="rd-knowledge-error" role="alert">{error}</p>}
+      {error && !formOpen && <p className="rd-knowledge-error" role="alert">{error}</p>}
       {message && <p className="rd-knowledge-success" role="status">{message}</p>}
 
-      <div className="rd-info-card">
-        <h3>{editingId ? 'Edit Lesson' : 'Create Lesson'}</h3>
-
+      {formOpen && (
+        <div className="rd-modal-backdrop" onMouseDown={(event) => {
+          if (event.target === event.currentTarget) closeForm();
+        }}>
+          <div className="rd-modal-panel rd-lesson-modal-panel" role="dialog" aria-modal="true" aria-labelledby="rd-lesson-modal-title">
+            <div className="rd-modal-heading">
+              <h3 id="rd-lesson-modal-title">{editingId ? 'Edit Lesson' : 'Create Lesson'}</h3>
+              <button type="button" aria-label="Close lesson editor" onClick={closeForm} disabled={saving}>&times;</button>
+            </div>
+            {error && <p className="rd-knowledge-error" role="alert">{error}</p>}
         <form
           className="rd-knowledge-form"
           onSubmit={(event) => void saveLesson(event)}
@@ -396,22 +407,38 @@ export default function LessonManager({
               {saving ? 'Saving...' : editingId ? 'Update Lesson' : 'Create Lesson'}
             </button>
 
-            {editingId && (
-              <button type="button" onClick={resetForm}>
-                Cancel
-              </button>
-            )}
+            <button type="button" onClick={closeForm} disabled={saving}>Cancel</button>
           </div>
         </form>
-      </div>
+          </div>
+        </div>
+      )}
+
+      {showImporter && (
+        <div className="rd-modal-backdrop">
+          <div className="rd-modal-panel rd-lesson-modal-panel" role="dialog" aria-modal="true" aria-label="Import Lessons">
+            <LessonImporter
+              moduleId={moduleId}
+              onImported={refreshLessons}
+              onClose={closeImporter}
+            />
+          </div>
+        </div>
+      )}
 
       <div className="rd-info-card">
-        <h3>Lessons ({lessons.length})</h3>
+        <div className="rd-modal-heading">
+          <h3>Lessons ({lessons.length})</h3>
+          <div className="rd-knowledge-actions">
+            <button type="button" onClick={() => { setFormOpen(false); setShowImporter(true); }}>Import Lessons</button>
+            <button type="button" className="rd-knowledge-add-button" onClick={() => { setShowImporter(false); startCreate(); }}>+ Add Lesson</button>
+          </div>
+        </div>
 
         {loading ? (
           <p>Loading lessons...</p>
         ) : lessons.length === 0 ? (
-          <p>No lessons yet. Create your first lesson above.</p>
+          <p>No lessons yet. Select Add Lesson to create one.</p>
         ) : (
           <div className="rd-course-grid">
             {lessons.map((lesson) => (
@@ -434,7 +461,7 @@ export default function LessonManager({
                     type="button"
                     onClick={() => setReadingLesson(lesson)}
                   >
-                    Read Lesson →
+                    Read Lesson &rarr;
                   </button>
                   <button type="button" onClick={() => editLesson(lesson)}>
                     Edit

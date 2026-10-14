@@ -66,7 +66,7 @@ export default function ProfileEditor() {
 
   return (
     <form className="admin-profile-form" onSubmit={handleSave}>
-      <h2>Edit Profile</h2>
+      <p>Manage your profile and display on your portfolio.</p>
 
       <label htmlFor="profile-name">Full Name</label>
       <input
