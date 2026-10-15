@@ -1199,3 +1199,74 @@
     font-size: 21px;
   }
 }
+
+/* Phase 23.02.1 — Professional Roles editor */
+.rd-roles-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 18px; }
+.rd-roles-toolbar h2 { margin: 0 0 6px; font-size: 1.25rem; }
+.rd-roles-toolbar p { margin: 0; opacity: .75; }
+.rd-roles-toolbar > button { white-space: nowrap; }
+.rd-roles-list { display: grid; gap: 10px; }
+.rd-roles-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 14px; border: 1px solid #29415f; border-radius: 12px; background: #111f33; }
+.rd-roles-title { display: flex; align-items: center; gap: 12px; min-width: 0; overflow-wrap: anywhere; }
+.rd-roles-number { color: #7ca7c9; font-size: .8rem; min-width: 20px; }
+.rd-roles-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.rd-roles-actions button { padding: 6px 10px; }
+.rd-roles-modal-backdrop { position: fixed; inset: 0; z-index: 1100; background: rgba(0, 5, 17, .78); display: grid; place-items: center; padding: 16px; }
+.rd-roles-modal { width: min(100%, 460px); padding: 24px; border-radius: 16px; border: 1px solid #345574; background: #122138; box-shadow: 0 20px 60px rgba(0,0,0,.4); color: #edf5ff; }
+.rd-roles-modal-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 20px; }
+.rd-roles-modal-heading h2 { margin: 0; font-size: 1.2rem; }
+.rd-roles-modal-heading button { font-size: 1.4rem; }
+.rd-roles-modal form { display: grid; gap: 12px; }
+.rd-roles-modal label { font-size: .9rem; }
+.rd-roles-modal input { width: 100%; box-sizing: border-box; padding: 11px 12px; border: 1px solid #3d5d80; border-radius: 8px; background: #09192b; color: #fff; }
+.rd-roles-modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+@media (max-width: 650px) { .rd-roles-toolbar, .rd-roles-row { align-items: stretch; flex-direction: column; } .rd-roles-actions { justify-content: flex-start; } }
+
+/* Phase 23.02.2 — scoped compact Skills Editor */
+.rd-skills-heading { display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1rem; }
+.rd-skills-heading h2 { margin:0 0 .3rem; font-size:1.15rem; }
+.rd-skills-heading p { margin:0; opacity:.75; }
+.rd-skills-list { display:grid; gap:.55rem; }
+.rd-skills-row { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:.75rem 1rem; border:1px solid rgba(148,163,184,.18); border-radius:10px; background:rgba(15,23,42,.35); }
+.rd-skills-details { display:flex; flex-direction:column; gap:.2rem; min-width:0; }
+.rd-skills-details strong { overflow-wrap:anywhere; }
+.rd-skills-details span { font-size:.82rem; opacity:.7; }
+.rd-skills-actions { display:flex; align-items:center; flex-wrap:wrap; gap:.4rem; }
+.rd-skills-actions button { padding:.4rem .65rem; }
+.rd-skills-message { margin-top:1rem; }
+.rd-skills-overlay { position:fixed; inset:0; z-index:1000; display:grid; place-items:center; padding:1rem; background:rgba(2,6,23,.78); }
+.rd-skills-modal { width:min(100%,440px); max-height:90vh; overflow-y:auto; padding:1.3rem; border:1px solid rgba(148,163,184,.25); border-radius:14px; background:#101c32; color:#f8fafc; box-shadow:0 20px 60px rgba(0,0,0,.4); }
+.rd-skills-modal-header { display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1rem; }
+.rd-skills-modal-header h2 { margin:0; font-size:1.2rem; }
+.rd-skills-modal form { display:grid; gap:.6rem; }
+.rd-skills-modal label { font-size:.88rem; font-weight:600; }
+.rd-skills-modal input { box-sizing:border-box; width:100%; padding:.75rem; border:1px solid #475569; border-radius:8px; background:#0b1527; color:#f8fafc; }
+.rd-skills-modal-actions { display:flex; justify-content:flex-end; gap:.6rem; margin-top:1rem; }
+.rd-skills-modal button:disabled, .rd-skills-editor button:disabled { opacity:.45; cursor:not-allowed; }
+@media (max-width:650px) { .rd-skills-heading,.rd-skills-row { align-items:stretch; flex-direction:column; } .rd-skills-actions { justify-content:flex-start; } }
+
+/* Phase 23.02.3: compact profile summary and edit modal */
+.rd-profile-toolbar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:16px; }
+.rd-profile-toolbar p { margin:0; }
+.rd-profile-toolbar button, .rd-profile-modal-actions button[type='submit'] { padding:9px 15px; border:1px solid #3979df; border-radius:8px; background:#2563eb; color:white; cursor:pointer; }
+.rd-profile-summary { display:grid; gap:0; border:1px solid #26364e; border-radius:12px; background:#111d30; overflow:hidden; }
+.rd-profile-field { padding:14px 18px; display:grid; gap:6px; border-bottom:1px solid #26364e; }
+.rd-profile-field:last-child { border-bottom:0; }
+.rd-profile-field > span { font-size:12px; color:#9caec8; }
+.rd-profile-field strong, .rd-profile-field p { margin:0; color:#e5ecf6; }
+.rd-profile-biography { white-space:pre-wrap; line-height:1.6; }
+.rd-profile-message { margin-top:12px; }
+.rd-profile-modal-backdrop { position:fixed; inset:0; z-index:1000; display:flex; align-items:center; justify-content:center; padding:18px; background:rgba(2,8,20,.75); }
+.rd-profile-modal { width:min(100%,560px); max-height:calc(100vh - 36px); overflow-y:auto; border:1px solid #344761; border-radius:14px; background:#152238; color:#e5ecf6; box-shadow:0 24px 70px rgba(0,0,0,.45); }
+.rd-profile-modal-heading { display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid #344761; }
+.rd-profile-modal-heading h2 { font-size:18px; margin:0; }
+.rd-profile-modal-heading button { border:0; background:transparent; color:#cbd5e1; font-size:26px; cursor:pointer; }
+.rd-profile-modal-form { display:grid; gap:9px; padding:20px; }
+.rd-profile-modal-form label { font-size:13px; font-weight:600; }
+.rd-profile-modal-form input, .rd-profile-modal-form textarea { width:100%; box-sizing:border-box; padding:10px 12px; border:1px solid #41516a; border-radius:8px; background:#0c1729; color:#f1f5f9; font:inherit; }
+.rd-profile-modal-form textarea { resize:vertical; }
+.rd-profile-modal-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:10px; }
+.rd-profile-modal-actions button { padding:9px 15px; border-radius:8px; cursor:pointer; }
+.rd-profile-modal-actions button[type='button'] { background:transparent; border:1px solid #52627a; color:#e5ecf6; }
+.rd-profile-modal-actions button:disabled, .rd-profile-toolbar button:disabled { opacity:.6; cursor:not-allowed; }
+@media (max-width:600px) { .rd-profile-toolbar { align-items:stretch; } .rd-profile-toolbar button { width:100%; } }
