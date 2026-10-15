@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import ModuleManager from './ModuleManager';
+import { getResumeReadingLocation } from '../services/readingProgress';
+import type { ResumeReadingTarget } from './resumeReadingTypes';
+
 
 interface KnowledgeCourse {
   id: string;
@@ -64,6 +67,48 @@ export default function KnowledgeTracker({
       if (courseSort === 'title-desc') return second.title.localeCompare(first.title);
       return first.display_order - second.display_order;
     });
+
+  
+  const [resumeTarget, setResumeTarget] = useState<ResumeReadingTarget | null>(null);
+  const [resumeLoading, setResumeLoading] = useState(false);
+
+  async function resumeReading() {
+    setResumeLoading(true);
+    setError('');
+
+    try {
+      const location = await getResumeReadingLocation();
+
+      if (!location) {
+        setError('No saved lesson found. Open a lesson first.');
+        return;
+      }
+
+      setResumeTarget({
+        courseId: location.courseId,
+        moduleId: location.moduleId,
+        lessonId: location.lessonId,
+      });
+
+      // Course selection is handled by the existing course state.
+      const matchingCourse = courses.find(
+        (course) => course.id === location.courseId
+      );
+
+      if (matchingCourse) {
+        setSelectedCourse(matchingCourse);
+      } else {
+        setError('The saved course could not be found.');
+        setResumeTarget(null);
+      }
+    } catch (error) {
+      console.error('Failed to resume reading:', error);
+      setError('Unable to load your saved lesson.');
+    } finally {
+      setResumeLoading(false);
+    }
+  }
+
 
   async function loadCourseProgress() {
   const { data: modules, error: moduleError } = await supabase
@@ -270,6 +315,8 @@ export default function KnowledgeTracker({
         void loadCourseProgress();
         onBackToCourses?.();
         }}
+      resumeTarget={resumeTarget}
+      onResumeComplete={() => setResumeTarget(null)}
     />
   );
 }
@@ -280,6 +327,16 @@ export default function KnowledgeTracker({
         <p>
           Organize your private courses, modules, lessons, and learning progress.
         </p>
+      </div>
+
+      <div className="rd-knowledge-actions">
+        <button
+          type="button"
+          onClick={() => void resumeReading()}
+          disabled={resumeLoading}
+        >
+          {resumeLoading ? 'Loading...' : '▶ Resume Reading'}
+        </button>
       </div>
 
       {error && <p role="alert" className="rd-knowledge-error">{error}</p>}

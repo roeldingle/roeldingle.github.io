@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import LessonManager from './LessonManager';
+import type { ResumeReadingTarget } from './resumeReadingTypes';
 
 interface KnowledgeModule {
   id: string;
@@ -21,6 +22,8 @@ interface ModuleManagerProps {
   courseId: string;
   courseTitle: string;
   onBack: () => void;
+  resumeTarget?: ResumeReadingTarget | null;
+  onResumeComplete?: () => void;
 }
 
 const emptyForm = {
@@ -33,6 +36,8 @@ export default function ModuleManager({
   courseId,
   courseTitle,
   onBack,
+  resumeTarget = null,
+  onResumeComplete,
 }: ModuleManagerProps) {
   const [modules, setModules] = useState<KnowledgeModule[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -49,6 +54,19 @@ export default function ModuleManager({
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [selectedModule, setSelectedModule] = useState<KnowledgeModule | null>(null);
+
+  // Automatically select the module containing the saved lesson.
+  useEffect(() => {
+    if (!resumeTarget || resumeTarget.courseId !== courseId) return;
+
+    const matchingModule = modules.find(
+      (module) => module.id === resumeTarget.moduleId
+    );
+
+    if (matchingModule) {
+      setSelectedModule(matchingModule);
+    }
+  }, [resumeTarget, courseId, modules]);
 
   async function loadModuleProgress(moduleIds: string[]) {
   if (moduleIds.length === 0) {
@@ -272,6 +290,8 @@ export default function ModuleManager({
     <LessonManager
       moduleId={selectedModule.id}
       moduleTitle={`Module ${String(selectedModule.module_number).padStart(2, '0')} — ${selectedModule.title}`}
+      resumeLessonId={resumeTarget?.moduleId === selectedModule.id ? resumeTarget.lessonId : null}
+      onResumeComplete={onResumeComplete}
       onBack={() => {
         setSelectedModule(null);
         void loadModuleProgress(modules.map((module) => module.id));
