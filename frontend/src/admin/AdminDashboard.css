@@ -1117,3 +1117,85 @@
   align-items: center;
   gap: 0.65rem;
 }
+
+/* Phase 23.01 — live dashboard statistics */
+.rd-overview-stat-value {
+  display: block;
+  font-size: clamp(1.5rem, 3vw, 2.1rem);
+  font-weight: 750;
+  line-height: 1.15;
+  color: #eaf5ff;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Phase 23.01 — Compact dashboard cards.
+   Append to the END of frontend/src/admin/AdminDashboard.css */
+.rd-overview .rd-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.rd-overview .rd-stat-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  min-width: 0;
+  min-height: 110px;
+  padding: 14px 16px;
+  gap: 4px;
+  text-align: left;
+}
+
+.rd-overview .rd-stat-icon {
+  font-size: 17px;
+  line-height: 1;
+  margin: 0 0 3px;
+}
+
+.rd-overview .rd-stat-card strong {
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.rd-overview .rd-overview-stat-value {
+  font-size: 24px;
+  line-height: 1.1;
+  font-weight: 750;
+}
+
+.rd-overview .rd-stat-card small {
+  font-size: 11px;
+  line-height: 1.3;
+  opacity: 0.75;
+}
+
+.rd-overview .rd-stat-arrow {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  font-size: 13px;
+}
+
+@media (max-width: 900px) {
+  .rd-overview .rd-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .rd-overview .rd-stats {
+    gap: 8px;
+  }
+
+  .rd-overview .rd-stat-card {
+    min-height: 100px;
+    padding: 12px;
+  }
+
+  .rd-overview .rd-overview-stat-value {
+    font-size: 21px;
+  }
+}
