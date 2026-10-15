@@ -55,19 +55,6 @@ export default function ModuleManager({
   const [message, setMessage] = useState('');
   const [selectedModule, setSelectedModule] = useState<KnowledgeModule | null>(null);
 
-  // Automatically select the module containing the saved lesson.
-  useEffect(() => {
-    if (!resumeTarget || resumeTarget.courseId !== courseId) return;
-
-    const matchingModule = modules.find(
-      (module) => module.id === resumeTarget.moduleId
-    );
-
-    if (matchingModule) {
-      setSelectedModule(matchingModule);
-    }
-  }, [resumeTarget, courseId, modules]);
-
   async function loadModuleProgress(moduleIds: string[]) {
   if (moduleIds.length === 0) {
     setModuleProgress({});
@@ -127,6 +114,12 @@ export default function ModuleManager({
         const loadedModules = (data ?? []) as KnowledgeModule[];
         setModules(loadedModules);
 
+        // Select the saved module after the asynchronous query completes.
+        if (resumeTarget?.courseId === courseId) {
+          const savedModule = loadedModules.find((module) => module.id === resumeTarget.moduleId);
+          if (savedModule) setSelectedModule(savedModule);
+        }
+
         await loadModuleProgress(
           loadedModules.map((module) => module.id)
         );
@@ -140,7 +133,7 @@ export default function ModuleManager({
     return () => {
       active = false;
     };
-  }, [courseId]);
+  }, [courseId, resumeTarget]);
 
   async function refreshModules() {
     const { data, error: loadError } = await supabase

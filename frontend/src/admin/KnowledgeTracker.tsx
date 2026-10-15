@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import ModuleManager from './ModuleManager';
 import { getResumeReadingLocation } from '../services/readingProgress';
@@ -71,6 +71,7 @@ export default function KnowledgeTracker({
   
   const [resumeTarget, setResumeTarget] = useState<ResumeReadingTarget | null>(null);
   const [resumeLoading, setResumeLoading] = useState(false);
+  const clearResumeTarget = useCallback(() => setResumeTarget(null), []);
 
   async function resumeReading() {
     setResumeLoading(true);
@@ -316,7 +317,7 @@ export default function KnowledgeTracker({
         onBackToCourses?.();
         }}
       resumeTarget={resumeTarget}
-      onResumeComplete={() => setResumeTarget(null)}
+      onResumeComplete={clearResumeTarget}
     />
   );
 }
