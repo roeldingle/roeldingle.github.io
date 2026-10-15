@@ -44,9 +44,26 @@ export default function KnowledgeTracker({
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [selectedCourse, setSelectedCourse] = useState<KnowledgeCourse | null>(null);
+  const [courseSearch, setCourseSearch] = useState('');
+  const [courseSort, setCourseSort] = useState<'order' | 'title-asc' | 'title-desc'>('order');
+  const [visibilityFilter, setVisibilityFilter] = useState<'all' | 'private' | 'published'>('all');
   const activeCourse = selectedCourseId
   ? courses.find((course) => course.id === selectedCourseId) ?? null
   : selectedCourse;
+
+  const filteredCourses = courses
+    .filter((course) => {
+      const search = courseSearch.trim().toLocaleLowerCase();
+      const matchesSearch = !search || [course.title, course.description, course.slug]
+        .some((value) => value.toLocaleLowerCase().includes(search));
+      const matchesVisibility = visibilityFilter === 'all' || course.visibility === visibilityFilter;
+      return matchesSearch && matchesVisibility;
+    })
+    .sort((first, second) => {
+      if (courseSort === 'title-asc') return first.title.localeCompare(second.title);
+      if (courseSort === 'title-desc') return second.title.localeCompare(first.title);
+      return first.display_order - second.display_order;
+    });
 
   async function loadCourseProgress() {
   const { data: modules, error: moduleError } = await supabase
@@ -273,7 +290,7 @@ export default function KnowledgeTracker({
           <div className="rd-modal-panel" role="dialog" aria-modal="true" aria-labelledby="rd-course-modal-title">
             <div className="rd-modal-heading">
               <h3 id="rd-course-modal-title">{editingId ? 'Edit Course' : 'Create Course'}</h3>
-              <button type="button" aria-label="Close form" onClick={closeForm} disabled={saving}>×</button>
+              <button type="button" aria-label="Close form" onClick={closeForm} disabled={saving}>&times;</button>
             </div>
             {error && <p role="alert" className="rd-knowledge-error">{error}</p>}
 
@@ -328,13 +345,47 @@ export default function KnowledgeTracker({
           <button type="button" className="rd-knowledge-add-button" onClick={startCreate}>+ Add Course</button>
         </div>
 
+        <div className="rd-course-toolbar">
+          <label>
+            <span>Search courses</span>
+            <input
+              type="search"
+              value={courseSearch}
+              onChange={(event) => setCourseSearch(event.target.value)}
+              placeholder="Search title, description, or slug"
+            />
+          </label>
+          <label>
+            <span>Visibility</span>
+            <select value={visibilityFilter} onChange={(event) => setVisibilityFilter(event.target.value as typeof visibilityFilter)}>
+              <option value="all">All courses</option>
+              <option value="private">Private</option>
+              <option value="published">Published</option>
+            </select>
+          </label>
+          <label>
+            <span>Sort by</span>
+            <select value={courseSort} onChange={(event) => setCourseSort(event.target.value as typeof courseSort)}>
+              <option value="order">Display order</option>
+              <option value="title-asc">Title A–Z</option>
+              <option value="title-desc">Title Z–A</option>
+            </select>
+          </label>
+          <button type="button" onClick={() => { setCourseSearch(''); setVisibilityFilter('all'); setCourseSort('order'); }}>
+            Clear filters
+          </button>
+        </div>
+        {!loading && <p className="rd-course-results" role="status">Showing {filteredCourses.length} of {courses.length} courses</p>}
+
         {loading ? (
           <p>Loading courses...</p>
         ) : courses.length === 0 ? (
           <p>No courses yet. Select Add Course to create one.</p>
+        ) : filteredCourses.length === 0 ? (
+          <p>No courses match your search or filters.</p>
         ) : (
           <div className="rd-course-grid">
-            {courses.map((course) => (
+            {filteredCourses.map((course) => (
               <article className="rd-course-card" key={course.id}>
                 <div className="rd-course-card-header">
                   <h4>{course.title}</h4>
