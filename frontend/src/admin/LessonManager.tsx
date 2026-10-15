@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { saveLastOpenedLesson } from '../services/readingProgress';
 import LessonImporter from './LessonImporter';
 import LessonReader from './LessonReader';
 
@@ -19,6 +20,8 @@ interface KnowledgeLesson {
 interface LessonManagerProps {
   moduleId: string;
   moduleTitle: string;
+  resumeLessonId?: string | null;
+  onResumeComplete?: () => void;
   onBack: () => void;
 }
 
@@ -33,6 +36,8 @@ const emptyForm = {
 export default function LessonManager({
   moduleId,
   moduleTitle,
+  resumeLessonId = null,
+  onResumeComplete,
   onBack,
 }: LessonManagerProps) {
   const [lessons, setLessons] = useState<KnowledgeLesson[]>([]);
@@ -49,6 +54,29 @@ export default function LessonManager({
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<LessonStatus | 'all'>('all');
   const [sortOrder, setSortOrder] = useState<'number' | 'title_asc' | 'title_desc'>('number');
+
+  // Save reading activity whenever the selected lesson changes.
+  useEffect(() => {
+    if (!readingLesson) return;
+
+    void saveLastOpenedLesson(readingLesson.id).catch((error: unknown) => {
+      console.error('Failed to save reading progress:', error);
+    });
+  }, [readingLesson?.id]);
+
+  // Open the saved lesson once the module's lessons are loaded.
+  useEffect(() => {
+    if (!resumeLessonId) return;
+
+    const matchingLesson = lessons.find(
+      (lesson) => lesson.id === resumeLessonId
+    );
+
+    if (matchingLesson) {
+      setReadingLesson(matchingLesson);
+      onResumeComplete?.();
+    }
+  }, [resumeLessonId, lessons, onResumeComplete]);
 
   useEffect(() => {
     let active = true;
