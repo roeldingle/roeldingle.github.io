@@ -1270,3 +1270,229 @@
 .rd-profile-modal-actions button[type='button'] { background:transparent; border:1px solid #52627a; color:#e5ecf6; }
 .rd-profile-modal-actions button:disabled, .rd-profile-toolbar button:disabled { opacity:.6; cursor:not-allowed; }
 @media (max-width:600px) { .rd-profile-toolbar { align-items:stretch; } .rd-profile-toolbar button { width:100%; } }
+
+/* Phase 23.03.1 — Compact Projects search, filters, and sorting */
+.rd-project-toolbar {
+  display: grid;
+  grid-template-columns: minmax(220px, 2fr) repeat(3, minmax(130px, 1fr));
+  gap: 12px;
+  align-items: end;
+  margin: 18px 0;
+  padding: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.35);
+}
+.rd-project-search, .rd-project-filter { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.rd-project-toolbar label { font-size: 12px; font-weight: 600; color: #cbd5e1; }
+.rd-project-toolbar input, .rd-project-toolbar select {
+  width: 100%; min-width: 0; box-sizing: border-box; min-height: 38px;
+  padding: 8px 10px; border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 8px; background: #111d32; color: #f1f5f9; font: inherit; font-size: 13px;
+}
+.rd-project-toolbar input:focus-visible, .rd-project-toolbar select:focus-visible {
+  outline: 2px solid #60a5fa; outline-offset: 2px;
+}
+.rd-project-filter-summary {
+  grid-column: 1 / -1; display: flex; align-items: center;
+  justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  color: #94a3b8; font-size: 12px;
+}
+.rd-project-filter-summary button, .rd-project-empty button {
+  background: transparent; border: 0; padding: 4px 0;
+  color: #93c5fd; cursor: pointer; font: inherit; font-weight: 600;
+}
+.rd-project-filter-summary button:hover, .rd-project-empty button:hover { text-decoration: underline; }
+.rd-project-empty { padding: 24px; text-align: center; color: #cbd5e1; }
+@media (max-width: 1000px) {
+  .rd-project-toolbar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .rd-project-toolbar { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Phase 23.03.2: Compact Knowledge Tracker course search toolbar */
+.rd-course-toolbar {
+  display: grid;
+  grid-template-columns: minmax(180px, 2fr) minmax(125px, 1fr) minmax(135px, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+  margin: 14px 0 8px;
+}
+.rd-course-toolbar label { display: grid; gap: 5px; min-width: 0; }
+.rd-course-toolbar label span { font-size: 12px; opacity: .78; }
+.rd-course-toolbar input,
+.rd-course-toolbar select {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 36px;
+  padding: 7px 10px;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  background: #101b30;
+  color: #e2e8f0;
+}
+.rd-course-toolbar button {
+  min-height: 36px;
+  padding: 7px 12px;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  background: #1e293b;
+  color: #e2e8f0;
+  cursor: pointer;
+}
+.rd-course-toolbar :is(input, select, button):focus-visible { outline: 2px solid #60a5fa; outline-offset: 2px; }
+.rd-course-results { font-size: 12px; opacity: .78; margin: 4px 0 12px; }
+@media (max-width: 850px) { .rd-course-toolbar { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .rd-course-toolbar { grid-template-columns: minmax(0, 1fr); } }
+
+/* Phase 23.03.3 — Compact Module Manager filters */
+.rd-module-toolbar {
+  display: grid;
+  grid-template-columns: minmax(180px, 2fr) repeat(2, minmax(130px, 1fr)) auto;
+  gap: 10px;
+  align-items: end;
+  margin: 14px 0 8px;
+}
+.rd-module-toolbar label { display: flex; flex-direction: column; gap: 5px; min-width: 0; font-size: 12px; }
+.rd-module-toolbar input, .rd-module-toolbar select {
+  width: 100%; min-width: 0; box-sizing: border-box; padding: 9px 10px;
+  border: 1px solid #33435e; border-radius: 8px;
+  background: #101c30; color: #e8eef8; font: inherit;
+}
+.rd-module-toolbar button {
+  padding: 9px 12px; border: 1px solid #33435e; border-radius: 8px;
+  background: #1c2b43; color: #e8eef8; cursor: pointer;
+}
+.rd-module-toolbar button:disabled { opacity: .45; cursor: default; }
+.rd-module-result-count { margin: 4px 0 12px; font-size: 12px; opacity: .75; }
+@media (max-width: 800px) { .rd-module-toolbar { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .rd-module-toolbar { grid-template-columns: 1fr; } }
+
+/* Phase 23.03.4 — compact Lesson Manager filters */
+.rd-lesson-filter-toolbar {
+  display: grid;
+  grid-template-columns: minmax(190px, 2fr) repeat(2, minmax(135px, 1fr)) auto;
+  align-items: end;
+  gap: 10px;
+  margin: 16px 0 8px;
+}
+.rd-lesson-filter-toolbar label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  font-size: 0.8rem;
+}
+.rd-lesson-filter-toolbar input,
+.rd-lesson-filter-toolbar select {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  min-height: 36px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid #35435d;
+  background: #111d32;
+  color: #edf3ff;
+}
+.rd-lesson-filter-toolbar button {
+  min-height: 36px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.rd-lesson-filter-toolbar button:disabled { opacity: 0.45; cursor: default; }
+.rd-lesson-filter-count { margin: 6px 0 14px; font-size: 0.82rem; opacity: 0.8; }
+@media (max-width: 900px) {
+  .rd-lesson-filter-toolbar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 540px) {
+  .rd-lesson-filter-toolbar { grid-template-columns: 1fr; }
+}
+
+/* Phase 23.03 — Shared admin modal and filter control consistency.
+   Append AFTER existing dashboard/modal/filter CSS rules. */
+
+/* Modal header: align title and close control consistently. */
+.rd-modal-panel .rd-modal-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.rd-modal-panel .rd-modal-heading > h3 {
+  margin: 0;
+  min-width: 0;
+}
+.rd-modal-panel .rd-modal-heading > button {
+  flex: 0 0 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  padding: 0;
+  border: 1px solid #40516c;
+  border-radius: 9px;
+  background: #1c2b43;
+  color: #e2e8f0;
+  font: inherit;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+.rd-modal-panel .rd-modal-heading > button:hover:not(:disabled) {
+  background: #30425e;
+  border-color: #7193c5;
+}
+
+/* Shared secondary button style for all filter toolbars. */
+.rd-project-toolbar button,
+.rd-course-toolbar button,
+.rd-module-toolbar button,
+.rd-lesson-filter-toolbar button {
+  min-height: 36px;
+  padding: 8px 13px;
+  border: 1px solid #40516c;
+  border-radius: 8px;
+  background: #1c2b43;
+  color: #e2e8f0;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+.rd-project-toolbar button:hover:not(:disabled),
+.rd-course-toolbar button:hover:not(:disabled),
+.rd-module-toolbar button:hover:not(:disabled),
+.rd-lesson-filter-toolbar button:hover:not(:disabled) {
+  background: #30425e;
+  border-color: #7193c5;
+}
+.rd-project-toolbar button:disabled,
+.rd-course-toolbar button:disabled,
+.rd-module-toolbar button:disabled,
+.rd-lesson-filter-toolbar button:disabled,
+.rd-modal-panel .rd-modal-heading > button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.rd-project-toolbar :is(button, input, select):focus-visible,
+.rd-course-toolbar :is(button, input, select):focus-visible,
+.rd-module-toolbar :is(button, input, select):focus-visible,
+.rd-lesson-filter-toolbar :is(button, input, select):focus-visible,
+.rd-modal-panel .rd-modal-heading > button:focus-visible {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+}
+
+/* Keep modal content usable on smaller screens. */
+.rd-modal-panel { box-sizing: border-box; max-width: 100%; }
+@media (max-width: 600px) {
+  .rd-modal-panel { padding: 18px; }
+  .rd-modal-panel .rd-modal-heading > button { flex-basis: 36px; }
+}

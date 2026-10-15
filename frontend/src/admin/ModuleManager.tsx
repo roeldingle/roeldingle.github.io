@@ -35,6 +35,9 @@ export default function ModuleManager({
   onBack,
 }: ModuleManagerProps) {
   const [modules, setModules] = useState<KnowledgeModule[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortOrder, setSortOrder] = useState<'number' | 'title-asc' | 'title-desc'>('number');
+  const [progressFilter, setProgressFilter] = useState<'all' | 'not-started' | 'in-progress' | 'completed'>('all');
   const [moduleProgress, setModuleProgress] = useState<
   Record<string, ModuleProgress>
 >({});
@@ -240,6 +243,30 @@ export default function ModuleManager({
     await refreshModules();
   }
 
+  // Filter and sort the modules already loaded from Supabase.
+  const filteredModules = modules
+    .filter((module) => {
+      const query = searchQuery.trim().toLocaleLowerCase();
+      const matchesSearch = !query || [module.title, module.description, String(module.module_number)]
+        .some((value) => value.toLocaleLowerCase().includes(query));
+      const progress = moduleProgress[module.id];
+      const total = progress?.total ?? 0;
+      const completed = progress?.completed ?? 0;
+      const inProgress = progress?.inProgress ?? 0;
+      const matchesProgress = progressFilter === 'all' ||
+        (progressFilter === 'not-started' && completed === 0 && inProgress === 0) ||
+        (progressFilter === 'in-progress' && (inProgress > 0 || (completed > 0 && completed < total))) ||
+        (progressFilter === 'completed' && total > 0 && completed === total);
+      return matchesSearch && matchesProgress;
+    })
+    .sort((first, second) => {
+      if (sortOrder === 'title-asc') return first.title.localeCompare(second.title);
+      if (sortOrder === 'title-desc') return second.title.localeCompare(first.title);
+      return first.module_number - second.module_number || first.display_order - second.display_order;
+    });
+
+  const filtersActive = Boolean(searchQuery.trim()) || sortOrder !== 'number' || progressFilter !== 'all';
+
   if (selectedModule) {
   return (
     <LessonManager
@@ -338,13 +365,50 @@ export default function ModuleManager({
           <button type="button" className="rd-knowledge-add-button" onClick={startCreate}>+ Add Module</button>
         </div>
 
+        <div className="rd-module-toolbar" role="search" aria-label="Filter modules">
+          <label>
+            <span>Search modules</span>
+            <input type="search" value={searchQuery} placeholder="Title, description, or number"
+              onChange={(event) => setSearchQuery(event.target.value)} />
+          </label>
+          <label>
+            <span>Progress</span>
+            <select value={progressFilter} onChange={(event) => setProgressFilter(event.target.value as typeof progressFilter)}>
+              <option value="all">All progress</option>
+              <option value="not-started">Not started</option>
+              <option value="in-progress">In progress</option>
+              <option value="completed">Completed</option>
+            </select>
+          </label>
+          <label>
+            <span>Sort by</span>
+            <select value={sortOrder} onChange={(event) => setSortOrder(event.target.value as typeof sortOrder)}>
+              <option value="number">Module number</option>
+              <option value="title-asc">Title A–Z</option>
+              <option value="title-desc">Title Z–A</option>
+            </select>
+          </label>
+          <button type="button" disabled={!filtersActive} onClick={() => {
+            setSearchQuery('');
+            setProgressFilter('all');
+            setSortOrder('number');
+          }}>Clear filters</button>
+        </div>
+        {!loading && modules.length > 0 && (
+          <p className="rd-module-result-count" role="status">
+            Showing {filteredModules.length} of {modules.length} modules
+          </p>
+        )}
+
         {loading ? (
           <p>Loading modules...</p>
         ) : modules.length === 0 ? (
           <p>No modules yet. Select Add Module to create Module 00.</p>
+        ) : filteredModules.length === 0 ? (
+          <p>No modules match your filters.</p>
         ) : (
           <div className="rd-course-grid">
-            {modules.map((module) => (
+            {filteredModules.map((module) => (
               <article className="rd-course-card" key={module.id}>
                 <div className="rd-course-card-header">
                   <h4>

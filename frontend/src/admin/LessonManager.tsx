@@ -46,6 +46,9 @@ export default function LessonManager({
   const [message, setMessage] = useState('');
   const [showImporter, setShowImporter] = useState(false);
   const [readingLesson, setReadingLesson] = useState<KnowledgeLesson | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<LessonStatus | 'all'>('all');
+  const [sortOrder, setSortOrder] = useState<'number' | 'title_asc' | 'title_desc'>('number');
 
   useEffect(() => {
     let active = true;
@@ -262,6 +265,26 @@ export default function LessonManager({
     (lesson) => lesson.status === 'completed'
   ).length;
 
+  const normalizedSearch = searchQuery.trim().toLocaleLowerCase();
+  const filteredLessons = lessons
+    .filter((lesson) => {
+      const matchesStatus = statusFilter === 'all' || lesson.status === statusFilter;
+      const matchesSearch = !normalizedSearch || [
+        lesson.title,
+        lesson.objectives,
+        lesson.content_markdown,
+        String(lesson.lesson_number),
+      ].some((value) => value.toLocaleLowerCase().includes(normalizedSearch));
+      return matchesStatus && matchesSearch;
+    })
+    .sort((first, second) => {
+      if (sortOrder === 'title_asc') return first.title.localeCompare(second.title);
+      if (sortOrder === 'title_desc') return second.title.localeCompare(first.title);
+      return first.lesson_number - second.lesson_number;
+    });
+
+  const hasActiveFilters = searchQuery !== '' || statusFilter !== 'all' || sortOrder !== 'number';
+
    if (readingLesson) {
     const currentIndex = lessons.findIndex(
       (lesson) => lesson.id === readingLesson.id
@@ -435,13 +458,56 @@ export default function LessonManager({
           </div>
         </div>
 
+        <div className="rd-lesson-filter-toolbar" role="search" aria-label="Filter lessons">
+          <label>
+            Search lessons
+            <input
+              type="search"
+              placeholder="Title, objectives, or content..."
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+            />
+          </label>
+          <label>
+            Progress
+            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as LessonStatus | 'all')}>
+              <option value="all">All statuses</option>
+              <option value="not_started">Not Started</option>
+              <option value="in_progress">In Progress</option>
+              <option value="completed">Completed</option>
+            </select>
+          </label>
+          <label>
+            Sort by
+            <select value={sortOrder} onChange={(event) => setSortOrder(event.target.value as 'number' | 'title_asc' | 'title_desc')}>
+              <option value="number">Lesson number</option>
+              <option value="title_asc">Title A–Z</option>
+              <option value="title_desc">Title Z–A</option>
+            </select>
+          </label>
+          <button
+            type="button"
+            disabled={!hasActiveFilters}
+            onClick={() => { setSearchQuery(''); setStatusFilter('all'); setSortOrder('number'); }}
+          >
+            Clear Filters
+          </button>
+        </div>
+        {!loading && lessons.length > 0 && (
+          <p className="rd-lesson-filter-count" role="status">
+            Showing {filteredLessons.length} of {lessons.length} lessons
+          </p>
+        )}
+
         {loading ? (
           <p>Loading lessons...</p>
         ) : lessons.length === 0 ? (
           <p>No lessons yet. Select Add Lesson to create one.</p>
+        ) : filteredLessons.length === 0 ? (
+          <p>No lessons match your filters. Try another search or clear the filters.</p>
         ) : (
           <div className="rd-course-grid">
-            {lessons.map((lesson) => (
+            {filteredLessons.map((lesson) => (
               <article className="rd-course-card" key={lesson.id}>
                 <div className="rd-course-card-header">
                   <h4>
