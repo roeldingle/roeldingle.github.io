@@ -55,28 +55,15 @@ export default function LessonManager({
   const [statusFilter, setStatusFilter] = useState<LessonStatus | 'all'>('all');
   const [sortOrder, setSortOrder] = useState<'number' | 'title_asc' | 'title_desc'>('number');
 
-  // Save reading activity whenever the selected lesson changes.
-  useEffect(() => {
-    if (!readingLesson) return;
+  const activeLessonId = readingLesson?.id;
 
-    void saveLastOpenedLesson(readingLesson.id).catch((error: unknown) => {
+  // Synchronize the currently open lesson with the user's reading history.
+  useEffect(() => {
+    if (!activeLessonId) return;
+    void saveLastOpenedLesson(activeLessonId).catch((error: unknown) => {
       console.error('Failed to save reading progress:', error);
     });
-  }, [readingLesson?.id]);
-
-  // Open the saved lesson once the module's lessons are loaded.
-  useEffect(() => {
-    if (!resumeLessonId) return;
-
-    const matchingLesson = lessons.find(
-      (lesson) => lesson.id === resumeLessonId
-    );
-
-    if (matchingLesson) {
-      setReadingLesson(matchingLesson);
-      onResumeComplete?.();
-    }
-  }, [resumeLessonId, lessons, onResumeComplete]);
+  }, [activeLessonId]);
 
   useEffect(() => {
     let active = true;
@@ -90,8 +77,21 @@ export default function LessonManager({
 
       if (!active) return;
 
-      if (loadError) setError(loadError.message);
-      else setLessons(data ?? []);
+      if (loadError) {
+        setError(loadError.message);
+      } else {
+        const loadedLessons = (data ?? []) as KnowledgeLesson[];
+        setLessons(loadedLessons);
+
+        // This state change follows the asynchronous Supabase response.
+        const savedLesson = resumeLessonId
+          ? loadedLessons.find((lesson) => lesson.id === resumeLessonId)
+          : null;
+        if (savedLesson) {
+          setReadingLesson(savedLesson);
+          onResumeComplete?.();
+        }
+      }
 
       setLoading(false);
     }
@@ -101,7 +101,7 @@ export default function LessonManager({
     return () => {
       active = false;
     };
-  }, [moduleId]);
+  }, [moduleId, resumeLessonId, onResumeComplete]);
 
   async function refreshLessons() {
     const { data, error: loadError } = await supabase
