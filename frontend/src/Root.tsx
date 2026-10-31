@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from 'react';
 import AdminLogin from './admin/AdminLogin';
-import App from './App';
+import App from './v3/App';
 
 export default function Root() {
   const [isAdminRoute, setIsAdminRoute] = useState(
