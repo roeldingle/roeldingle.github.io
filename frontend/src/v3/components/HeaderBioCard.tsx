@@ -57,7 +57,7 @@ export default function HeaderBioCard({
               <span className="v3-theme-icon" aria-hidden="true">
                 {isLightTheme ? '☾' : '☼'}
               </span>
-              {isLightTheme ? 'LET THERE BE LIGHT \u{2600}' : 'THE DARK RISES \u{1F319}'}
+              {isLightTheme ? 'LIGHT MODE' : 'DARK MODE'}
             </button>
             <span style={{ marginLeft: 'auto', fontFamily: "'JetBrains Mono', monospace", fontSize: '11px', color: '#94a3b8' }}>
               V2.4 // 2026
