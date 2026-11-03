@@ -131,10 +131,16 @@ export default function FloatingAiAssistant({
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const portfolioDataRef = useRef(portfolio);
+  const messagesRef = useRef(messages);
+  const lastHandledTriggerPromptRef = useRef<string>('');
 
   useEffect(() => {
     portfolioDataRef.current = portfolio;
   }, [portfolio]);
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   // Silent background wake-up ping for Render free tier instances
   useEffect(() => {
@@ -173,7 +179,7 @@ export default function FloatingAiAssistant({
     setMessages((current) => [...current, { role: 'user', text: trimmed }]);
     setIsTyping(true);
 
-    const historyPayload = messages.slice(-4).map((msg) => ({
+    const historyPayload = messagesRef.current.slice(-4).map((msg) => ({
       role: msg.role,
       content: msg.text,
     }));
@@ -258,17 +264,18 @@ export default function FloatingAiAssistant({
         },
       ]);
     }
-  }, [messages]);
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
   useEffect(() => {
-    if (triggerPrompt) {
+    if (triggerPrompt && triggerPrompt !== lastHandledTriggerPromptRef.current) {
+      lastHandledTriggerPromptRef.current = triggerPrompt;
       const promptTimer = window.setTimeout(() => {
         setIsOpen(true);
-        handleSendPrompt(`Tell me more about ${triggerPrompt}`);
+        void handleSendPrompt(`Tell me more about ${triggerPrompt}`);
       }, 0);
 
       return () => {
