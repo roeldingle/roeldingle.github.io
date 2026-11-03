@@ -54,29 +54,11 @@ export default function RolesSection({
                 onMouseEnter={() => onRoleHover(role.id)}
                 onMouseLeave={() => onRoleHover(null)}
                 style={{
-                  background: isSelected
-                    ? 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)'
-                    : isHovered
-                    ? '#f8fafc'
-                    : '#ffffff',
-                  border: isSelected
-                    ? '1.5px solid #2563eb'
-                    : isHovered
-                    ? '1.5px solid #93c5fd'
-                    : '1px solid #e2e8f0',
-                  borderRadius: '14px',
-                  padding: '14px',
                   cursor: 'pointer',
-                  transform: (isHovered || isSelected) ? 'translateY(-4px) scale(1.02)' : 'translateY(0)',
-                  boxShadow: (isHovered || isSelected)
-                    ? '0 12px 24px -6px rgba(37, 99, 235, 0.16)'
-                    : '0 2px 6px rgba(0,0,0,0.02)',
-                  transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
                   position: 'relative',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
-                  minHeight: '82px'
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>

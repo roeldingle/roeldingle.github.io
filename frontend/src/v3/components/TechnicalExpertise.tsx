@@ -67,18 +67,6 @@ export default function TechnicalExpertise({
                     <span
                       key={skill.id}
                       className={`v3-skill-chip${isHighlighted ? ' is-highlighted' : ''}`}
-                      style={{
-                        fontSize: '12px',
-                        padding: '5px 12px',
-                        borderRadius: '8px',
-                        background: isHighlighted ? 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)' : '#f8fafc',
-                        border: isHighlighted ? '1.5px solid #3b82f6' : '1px solid #e2e8f0',
-                        color: isHighlighted ? '#1d4ed8' : '#334155',
-                        fontWeight: isHighlighted ? 700 : 500,
-                        transform: isHighlighted ? 'scale(1.04) translateY(-1px)' : 'scale(1)',
-                        boxShadow: isHighlighted ? '0 4px 12px rgba(59, 130, 246, 0.18)' : 'none',
-                        transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                      }}
                     >
                       {skill.name}
                     </span>

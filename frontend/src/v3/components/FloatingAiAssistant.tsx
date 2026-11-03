@@ -15,6 +15,7 @@ type FloatingAiAssistantProps = {
   setIsOpen: Dispatch<SetStateAction<boolean>>;
   triggerPrompt: string;
   portfolio: PortfolioProfile;
+  onTriggerHandled?: () => void;
 };
 
 const BACKEND_BASE_URL = (
@@ -117,6 +118,7 @@ export default function FloatingAiAssistant({
   setIsOpen,
   triggerPrompt,
   portfolio,
+  onTriggerHandled,
 }: FloatingAiAssistantProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -271,18 +273,24 @@ export default function FloatingAiAssistant({
   }, [messages, isTyping]);
 
   useEffect(() => {
-    if (triggerPrompt && triggerPrompt !== lastHandledTriggerPromptRef.current) {
+    if (!triggerPrompt) {
+      lastHandledTriggerPromptRef.current = '';
+      return;
+    }
+
+    if (triggerPrompt !== lastHandledTriggerPromptRef.current) {
       lastHandledTriggerPromptRef.current = triggerPrompt;
       const promptTimer = window.setTimeout(() => {
         setIsOpen(true);
         void handleSendPrompt(`Tell me more about ${triggerPrompt}`);
+        onTriggerHandled?.();
       }, 0);
 
       return () => {
         window.clearTimeout(promptTimer);
       };
     }
-  }, [triggerPrompt, handleSendPrompt, setIsOpen]);
+  }, [triggerPrompt, handleSendPrompt, setIsOpen, onTriggerHandled]);
 
   // Status indicator helpers
   const getStatusDotColor = () => {
@@ -421,57 +429,47 @@ export default function FloatingAiAssistant({
               gap: '12px',
             }}
           >
-            {messages.map((msg, idx) => (
+            {messages.map((chatMessage, messageIndex) => (
               <div
-                key={idx}
+                key={messageIndex}
+                className={
+                  chatMessage.role === 'user'
+                    ? 'ai-message-bubble-user'
+                    : 'ai-message-bubble-assistant'
+                }
                 style={{
-                  alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                  alignSelf: chatMessage.role === 'user' ? 'flex-end' : 'flex-start',
                   maxWidth: '85%',
                   padding: '10px 14px',
-                  borderRadius: msg.role === 'user' ? '14px 14px 2px 14px' : '14px 14px 14px 2px',
-                  background: msg.role === 'user' ? '#2563eb' : 'rgba(255, 255, 255, 0.07)',
-                  color: '#ffffff',
+                  borderRadius:
+                    chatMessage.role === 'user'
+                      ? '14px 14px 2px 14px'
+                      : '14px 14px 14px 2px',
                   fontSize: '12.5px',
                   lineHeight: '1.5',
-                  border: msg.role === 'user' ? 'none' : '1px solid rgba(255, 255, 255, 0.08)',
                 }}
               >
-                {msg.role === 'assistant' ? (
+                {chatMessage.role === 'assistant' ? (
                   <div className="assistant-markdown">
                     <Markdown remarkPlugins={[remarkGfm]}>
-                      {msg.text || (isTyping && idx === messages.length - 1 ? 'Thinking...' : '')}
+                      {chatMessage.text ||
+                        (isTyping && messageIndex === messages.length - 1
+                          ? 'Thinking...'
+                          : '')}
                     </Markdown>
-                    {msg.provider && (
-                      <span
-                        style={{
-                          display: 'block',
-                          fontSize: '10px',
-                          color: '#94a3b8',
-                          marginTop: '6px',
-                          borderTop: '1px dashed rgba(255, 255, 255, 0.1)',
-                          paddingTop: '4px',
-                        }}
-                      >
-                        ⚡ {msg.provider}
+                    {chatMessage.provider && (
+                      <span className="ai-message-provider-tag">
+                        ⚡ {chatMessage.provider}
                       </span>
                     )}
                   </div>
                 ) : (
-                  msg.text
+                  chatMessage.text
                 )}
               </div>
             ))}
             {isTyping && (
-              <div
-                style={{
-                  alignSelf: 'flex-start',
-                  padding: '8px 12px',
-                  borderRadius: '12px',
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  fontSize: '11px',
-                  color: '#94a3b8',
-                }}
-              >
+              <div className="ai-typing-indicator">
                 Generating live response...
               </div>
             )}
@@ -497,13 +495,12 @@ export default function FloatingAiAssistant({
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder="Ask anything about Roel's background..."
+              className="ai-chat-input"
               style={{
                 flex: 1,
-                background: 'rgba(255, 255, 255, 0.08)',
                 border: '1px solid rgba(255, 255, 255, 0.14)',
                 borderRadius: '10px',
                 padding: '8px 12px',
-                color: '#ffffff',
                 fontSize: '12px',
                 outline: 'none',
               }}

@@ -187,6 +187,7 @@ export default function App() {
         setIsOpen={setIsAiOpen}
         triggerPrompt={aiPromptTrigger}
         portfolio={portfolio}
+        onTriggerHandled={() => setAiPromptTrigger('')}
       />
     </main>
   );

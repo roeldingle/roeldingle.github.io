@@ -83,16 +83,10 @@ export default function ParallelFeaturedSystems({
                 key={project.id}
                 className={`v3-project-card${isMatch ? ' is-matched' : ''}`}
                 style={{
-                  background: isMatch ? 'linear-gradient(145deg, #f0f7ff 0%, #ffffff 100%)' : '#f8fafc',
-                  border: isMatch ? '1.5px solid #2563eb' : '1px solid #e2e8f0',
-                  borderRadius: '16px',
-                  padding: '20px',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
-                  transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
-                  boxShadow: isMatch ? '0 12px 24px -4px rgba(37, 99, 235, 0.14)' : 'none',
-                  minHeight: '190px'
+                  minHeight: '190px',
                 }}
               >
                 <div>
