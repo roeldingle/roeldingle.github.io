@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
+import Markdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import type { PortfolioProfile } from '../../types/portfolio';
 
 type ChatMessage = {
   role: 'assistant' | 'user';
   text: string;
+  provider?: string;
 };
 
 type FloatingAiAssistantProps = {
@@ -13,6 +16,10 @@ type FloatingAiAssistantProps = {
   triggerPrompt: string;
   portfolio: PortfolioProfile;
 };
+
+const BACKEND_BASE_URL = (
+  import.meta.env.VITE_AI_BACKEND_URL || 'https://ai-resume-chat-bdov.onrender.com'
+).replace(/\/+$/, '');
 
 function createPortfolioAnswer(
   promptText: string,
@@ -114,11 +121,14 @@ export default function FloatingAiAssistant({
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: 'assistant',
-      text: `Hello! I'm ${portfolio.name}'s AI assistant. Ask me about their skills, background, or projects.`,
+      text: `Hello! I'm ${portfolio.name}'s AI assistant. Ask me about their background, technical stack, DevOps leadership, or AI RAG projects!`,
     },
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [backendStatus, setBackendStatus] = useState<'idle' | 'waking' | 'connected' | 'fallback'>('waking');
+  const [activeProvider, setActiveProvider] = useState<string>('');
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const portfolioDataRef = useRef(portfolio);
 
@@ -126,29 +136,129 @@ export default function FloatingAiAssistant({
     portfolioDataRef.current = portfolio;
   }, [portfolio]);
 
-  const handleSendPrompt = useCallback((userPrompt: string) => {
-    if (!userPrompt.trim()) return;
+  // Silent background wake-up ping for Render free tier instances
+  useEffect(() => {
+    let isComponentMounted = true;
 
-    setMessages((currentMessages) => [
-      ...currentMessages,
-      { role: 'user', text: userPrompt },
-    ]);
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 12000);
+
+    fetch(`${BACKEND_BASE_URL}/`, { signal: controller.signal })
+      .then((res) => {
+        if (res.ok && isComponentMounted) {
+          setBackendStatus('connected');
+        }
+      })
+      .catch(() => {
+        if (isComponentMounted) {
+          // Backend is either cold-starting or offline; local fallback remains ready
+          setBackendStatus('fallback');
+        }
+      })
+      .finally(() => {
+        window.clearTimeout(timeoutId);
+      });
+
+    return () => {
+      isComponentMounted = false;
+      controller.abort();
+    };
+  }, []);
+
+  const handleSendPrompt = useCallback(async (userPrompt: string) => {
+    const trimmed = userPrompt.trim();
+    if (!trimmed) return;
+
     setInputValue('');
+    setMessages((current) => [...current, { role: 'user', text: trimmed }]);
     setIsTyping(true);
 
-    window.setTimeout(() => {
-      const assistantReply = createPortfolioAnswer(
-        userPrompt,
+    const historyPayload = messages.slice(-4).map((msg) => ({
+      role: msg.role,
+      content: msg.text,
+    }));
+
+    let streamSuccess = false;
+
+    try {
+      const controller = new AbortController();
+      // Render free tier can take up to 45s on cold start; give adequate window
+      const timeoutId = window.setTimeout(() => controller.abort(), 45000);
+
+      const response = await fetch(`${BACKEND_BASE_URL}/api/chat/stream`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: trimmed,
+          history: historyPayload,
+        }),
+        signal: controller.signal,
+      });
+
+      window.clearTimeout(timeoutId);
+
+      if (response.ok && response.body) {
+        setBackendStatus('connected');
+        const providerHeader = response.headers.get('X-Model-Provider') || '';
+        if (providerHeader) {
+          setActiveProvider(providerHeader);
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder('utf-8');
+        let accumulated = '';
+
+        setMessages((current) => [
+          ...current,
+          {
+            role: 'assistant',
+            text: '',
+            provider: providerHeader || undefined,
+          },
+        ]);
+        setIsTyping(false);
+        streamSuccess = true;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          accumulated += decoder.decode(value, { stream: true });
+
+          setMessages((current) => {
+            const updated = [...current];
+            const lastIdx = updated.length - 1;
+            if (lastIdx >= 0 && updated[lastIdx].role === 'assistant') {
+              updated[lastIdx] = {
+                ...updated[lastIdx],
+                text: accumulated,
+              };
+            }
+            return updated;
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('Backend stream unavailable, using offline fallback:', err);
+    } finally {
+      setIsTyping(false);
+    }
+
+    if (!streamSuccess) {
+      setBackendStatus('fallback');
+      const fallbackReply = createPortfolioAnswer(
+        trimmed,
         portfolioDataRef.current
       );
-
-      setMessages((currentMessages) => [
-        ...currentMessages,
-        { role: 'assistant', text: assistantReply },
+      setMessages((current) => [
+        ...current,
+        {
+          role: 'assistant',
+          text: fallbackReply,
+          provider: 'Offline Knowledge Base',
+        },
       ]);
-      setIsTyping(false);
-    }, 600);
-  }, []);
+    }
+  }, [messages]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -156,8 +266,6 @@ export default function FloatingAiAssistant({
 
   useEffect(() => {
     if (triggerPrompt) {
-      // Defer this prop-triggered action so state updates run outside the
-      // effect body; cleanup cancels a stale prompt if the request changes.
       const promptTimer = window.setTimeout(() => {
         setIsOpen(true);
         handleSendPrompt(`Tell me more about ${triggerPrompt}`);
@@ -168,6 +276,21 @@ export default function FloatingAiAssistant({
       };
     }
   }, [triggerPrompt, handleSendPrompt, setIsOpen]);
+
+  // Status indicator helpers
+  const getStatusDotColor = () => {
+    if (backendStatus === 'connected') return '#10B981'; // Green
+    if (backendStatus === 'waking') return '#f59e0b';    // Amber
+    return '#94a3b8';                                  // Muted grey fallback
+  };
+
+  const getStatusLabel = () => {
+    if (backendStatus === 'connected') {
+      return activeProvider ? `AI Copilot (${activeProvider})` : 'AI Copilot Ready';
+    }
+    if (backendStatus === 'waking') return 'Waking AI Server...';
+    return 'Offline Mode (Local Knowledge)';
+  };
 
   return (
     <>
@@ -180,28 +303,49 @@ export default function FloatingAiAssistant({
           aria-modal="false"
           aria-labelledby="v3-ai-chat-title"
           style={{
-          background: '#0f172a',
-          color: '#ffffff',
-          borderRadius: '20px',
-          border: '1px solid rgba(255, 255, 255, 0.12)',
-          boxShadow: '0 24px 48px -12px rgba(15, 23, 42, 0.45)',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-          zIndex: 9999
-        }}>
-          {/* Header */}
-          <div style={{
-            padding: '16px 20px',
-            background: 'rgba(255, 255, 255, 0.04)',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+            background: '#0f172a',
+            color: '#ffffff',
+            borderRadius: '20px',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
+            boxShadow: '0 24px 48px -12px rgba(15, 23, 42, 0.45)',
             display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#38bdf8' }} className="pulsing-dot ai-status-dot"></span>
-              <span id="v3-ai-chat-title" style={{ fontSize: '13px', fontWeight: 700, letterSpacing: '0.02em' }}>ASK MY AI ASSISTANT</span>
+            flexDirection: 'column',
+            overflow: 'hidden',
+            zIndex: 9999,
+          }}
+        >
+          {/* Header */}
+          <div
+            style={{
+              padding: '14px 18px',
+              background: 'rgba(255, 255, 255, 0.04)',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span
+                  style={{
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    background: getStatusDotColor(),
+                  }}
+                  className="pulsing-dot ai-status-dot"
+                />
+                <span
+                  id="v3-ai-chat-title"
+                  style={{ fontSize: '13px', fontWeight: 700, letterSpacing: '0.02em' }}
+                >
+                  ASK ROEL'S AI COPILOT
+                </span>
+              </div>
+              <span style={{ fontSize: '10px', color: '#94a3b8', paddingLeft: '16px' }}>
+                {getStatusLabel()}
+              </span>
             </div>
             <button
               className="ai-modal-close"
@@ -215,7 +359,7 @@ export default function FloatingAiAssistant({
                 fontSize: '18px',
                 cursor: 'pointer',
                 padding: '0 4px',
-                lineHeight: 1
+                lineHeight: 1,
               }}
             >
               ✕
@@ -223,16 +367,18 @@ export default function FloatingAiAssistant({
           </div>
 
           {/* Quick Prompts */}
-          <div style={{
-            display: 'flex',
-            gap: '6px',
-            padding: '10px 16px',
-            background: 'rgba(255, 255, 255, 0.02)',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
-            overflowX: 'auto',
-            whiteSpace: 'nowrap'
-          }}>
-            {['Tech Stack?', 'AI Projects?', 'Leadership Experience?'].map((quick) => (
+          <div
+            style={{
+              display: 'flex',
+              gap: '6px',
+              padding: '10px 16px',
+              background: 'rgba(255, 255, 255, 0.02)',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+              overflowX: 'auto',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {['Tech Stack?', 'Leadership Experience?', 'Automation Stack?'].map((quick) => (
               <button
                 key={quick}
                 className="ai-quick-prompt"
@@ -246,7 +392,7 @@ export default function FloatingAiAssistant({
                   borderRadius: '999px',
                   padding: '4px 10px',
                   cursor: 'pointer',
-                  transition: 'background 0.15s ease'
+                  transition: 'background 0.15s ease',
                 }}
               >
                 {quick}
@@ -255,14 +401,19 @@ export default function FloatingAiAssistant({
           </div>
 
           {/* Messages Area */}
-          <div className="custom-scrollbar" aria-live="polite" aria-relevant="additions text" style={{
-            flex: 1,
-            overflowY: 'auto',
-            padding: '16px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px'
-          }}>
+          <div
+            className="custom-scrollbar"
+            aria-live="polite"
+            aria-relevant="additions text"
+            style={{
+              flex: 1,
+              overflowY: 'auto',
+              padding: '16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+            }}
+          >
             {messages.map((msg, idx) => (
               <div
                 key={idx}
@@ -275,22 +426,46 @@ export default function FloatingAiAssistant({
                   color: '#ffffff',
                   fontSize: '12.5px',
                   lineHeight: '1.5',
-                  border: msg.role === 'user' ? 'none' : '1px solid rgba(255, 255, 255, 0.08)'
+                  border: msg.role === 'user' ? 'none' : '1px solid rgba(255, 255, 255, 0.08)',
                 }}
               >
-                {msg.text}
+                {msg.role === 'assistant' ? (
+                  <div className="assistant-markdown">
+                    <Markdown remarkPlugins={[remarkGfm]}>
+                      {msg.text || (isTyping && idx === messages.length - 1 ? 'Thinking...' : '')}
+                    </Markdown>
+                    {msg.provider && (
+                      <span
+                        style={{
+                          display: 'block',
+                          fontSize: '10px',
+                          color: '#94a3b8',
+                          marginTop: '6px',
+                          borderTop: '1px dashed rgba(255, 255, 255, 0.1)',
+                          paddingTop: '4px',
+                        }}
+                      >
+                        ⚡ {msg.provider}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  msg.text
+                )}
               </div>
             ))}
             {isTyping && (
-              <div style={{
-                alignSelf: 'flex-start',
-                padding: '8px 12px',
-                borderRadius: '12px',
-                background: 'rgba(255, 255, 255, 0.05)',
-                fontSize: '11px',
-                color: '#94a3b8'
-              }}>
-                Typing response...
+              <div
+                style={{
+                  alignSelf: 'flex-start',
+                  padding: '8px 12px',
+                  borderRadius: '12px',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  fontSize: '11px',
+                  color: '#94a3b8',
+                }}
+              >
+                Generating live response...
               </div>
             )}
             <div ref={messagesEndRef} />
@@ -307,7 +482,7 @@ export default function FloatingAiAssistant({
               borderTop: '1px solid rgba(255, 255, 255, 0.08)',
               display: 'flex',
               gap: '8px',
-              background: 'rgba(255, 255, 255, 0.02)'
+              background: 'rgba(255, 255, 255, 0.02)',
             }}
           >
             <input
@@ -323,12 +498,13 @@ export default function FloatingAiAssistant({
                 padding: '8px 12px',
                 color: '#ffffff',
                 fontSize: '12px',
-                outline: 'none'
+                outline: 'none',
               }}
             />
             <button
               className="ai-send-button"
               type="submit"
+              disabled={isTyping}
               style={{
                 background: '#2563eb',
                 color: '#ffffff',
@@ -337,7 +513,8 @@ export default function FloatingAiAssistant({
                 padding: '8px 14px',
                 fontSize: '12px',
                 fontWeight: 600,
-                cursor: 'pointer'
+                cursor: isTyping ? 'not-allowed' : 'pointer',
+                opacity: isTyping ? 0.6 : 1,
               }}
             >
               Send
@@ -370,12 +547,20 @@ export default function FloatingAiAssistant({
           boxShadow: '0 12px 28px -4px rgba(15, 23, 42, 0.35)',
           cursor: 'pointer',
           zIndex: 9998,
-          transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+          transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
         }}
       >
-        <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#38bdf8' }} className="pulsing-dot ai-status-dot"></span>
+        <span
+          style={{
+            width: '8px',
+            height: '8px',
+            borderRadius: '50%',
+            background: getStatusDotColor(),
+          }}
+          className="pulsing-dot ai-status-dot"
+        />
         <span style={{ fontSize: '13px', fontWeight: 700, letterSpacing: '0.02em' }}>
-          {isOpen ? 'Close Assistant' : 'Ask My AI'}
+          {isOpen ? 'Close Assistant' : "Ask Roel's AI"}
         </span>
       </button>
     </>

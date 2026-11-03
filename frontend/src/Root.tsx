@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from 'react';
-import AdminLogin from './admin/AdminLogin';
+import AdminLogin from './admin-v3/AdminLogin';
 import App from './v3/App';
 
 export default function Root() {

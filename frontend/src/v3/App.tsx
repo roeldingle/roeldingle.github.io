@@ -23,7 +23,10 @@ const relatedSkillNamesByRoleTitle: Record<string, string[]> = {
     'CSS', 'Javascript',
   ],
   'automation test engineer': [
-    'Selenium', 'Selenium Java', 'Playwright', 'Github Actions', 'Jenkins', 'CI CD', 'JAVA', 'Typescript', 'Javascript',
+    'Selenium', 'Selenium Java', 'Playwright', 'Github Actions', 'Jenkins', 'CI CD', 'JAVA', 'Typescript', 'Javascript', 'Katalon',
+  ],
+  'automation tester': [
+    'Selenium', 'Selenium Java', 'Playwright', 'Github Actions', 'Jenkins', 'CI CD', 'JAVA', 'Typescript', 'Javascript', 'Katalon',
   ],
   'devops & infrastructure': ['Github Actions', 'Jenkins', 'CI CD'],
   'ai & rag engineer': [
