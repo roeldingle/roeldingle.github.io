@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { logAdminActivity } from '../lib/adminActivity';
 import { supabase } from '../lib/supabase';
 
 interface Profile {
@@ -67,6 +68,7 @@ export default function ProfileEditor() {
     if (error) {
       setMessage(`Save failed: ${error.message}`);
     } else {
+      await logAdminActivity('updated', 'profile', updatedProfile.name);
       setProfile(updatedProfile);
       setIsEditing(false);
       setMessage('Profile saved successfully!');

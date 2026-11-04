@@ -66,7 +66,7 @@ export default function ParallelFeaturedSystems({
             </span>
           </div>
           <span style={{ fontSize: '11px', color: '#94a3b8', fontFamily: "'JetBrains Mono', monospace" }}>
-            Parallel View // Dual Showcase
+            Project Index // Published Work
           </span>
         </div>
 
@@ -133,23 +133,37 @@ export default function ParallelFeaturedSystems({
                     ))}
                   </div>
 
-                  <button
-                    onClick={() => onInspectInAi(project.title)}
-                    style={{
-                      background: 'transparent',
-                      border: 'none',
-                      padding: 0,
-                      fontSize: '11.5px',
-                      fontWeight: 600,
-                      color: '#2563eb',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px'
-                    }}
-                  >
-                    Query AI about this build →
-                  </button>
+                  <div className="v3-project-actions">
+                    <div className="v3-project-external-links">
+                      {project.githubUrl && (
+                        <a href={project.githubUrl} target="_blank" rel="noopener noreferrer">
+                          GitHub ↗
+                        </a>
+                      )}
+                      {project.demoUrl && (
+                        <a href={project.demoUrl} target="_blank" rel="noopener noreferrer">
+                          Live Demo ↗
+                        </a>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => onInspectInAi(project.title)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        padding: 0,
+                        fontSize: '11.5px',
+                        fontWeight: 600,
+                        color: '#2563eb',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      Query AI about this build →
+                    </button>
+                  </div>
                 </div>
               </article>
             );
