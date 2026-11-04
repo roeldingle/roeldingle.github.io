@@ -128,8 +128,9 @@ export default function FloatingAiAssistant({
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [backendStatus, setBackendStatus] = useState<'idle' | 'waking' | 'connected' | 'fallback'>('waking');
+  const [backendStatus, setBackendStatus] = useState<'waking' | 'connected' | 'fallback'>('waking');
   const [activeProvider, setActiveProvider] = useState<string>('');
+  const isChatDisabled = backendStatus === 'waking' || isTyping;
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const portfolioDataRef = useRef(portfolio);
@@ -144,38 +145,54 @@ export default function FloatingAiAssistant({
     messagesRef.current = messages;
   }, [messages]);
 
-  // Silent background wake-up ping for Render free tier instances
+  // Keep checking until Render has finished starting its web service.
   useEffect(() => {
     let isComponentMounted = true;
+    let retryTimer: number | undefined;
+    let activeController: AbortController | undefined;
 
-    const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), 12000);
+    const checkBackendReadiness = async () => {
+      const controller = new AbortController();
+      activeController = controller;
+      const timeoutId = window.setTimeout(() => controller.abort(), 12000);
 
-    fetch(`${BACKEND_BASE_URL}/`, { signal: controller.signal })
-      .then((res) => {
-        if (res.ok && isComponentMounted) {
+      try {
+        const response = await fetch(`${BACKEND_BASE_URL}/`, {
+          cache: 'no-store',
+          signal: controller.signal,
+        });
+
+        if (response.ok && isComponentMounted) {
           setBackendStatus('connected');
+          return;
         }
-      })
-      .catch(() => {
-        if (isComponentMounted) {
-          // Backend is either cold-starting or offline; local fallback remains ready
-          setBackendStatus('fallback');
-        }
-      })
-      .finally(() => {
+      } catch {
+        // A failed health check is expected while Render is starting up.
+      } finally {
         window.clearTimeout(timeoutId);
-      });
+      }
+
+      if (isComponentMounted) {
+        retryTimer = window.setTimeout(() => {
+          void checkBackendReadiness();
+        }, 3000);
+      }
+    };
+
+    void checkBackendReadiness();
 
     return () => {
       isComponentMounted = false;
-      controller.abort();
+      if (retryTimer !== undefined) {
+        window.clearTimeout(retryTimer);
+      }
+      activeController?.abort();
     };
   }, []);
 
   const handleSendPrompt = useCallback(async (userPrompt: string) => {
     const trimmed = userPrompt.trim();
-    if (!trimmed) return;
+    if (!trimmed || backendStatus === 'waking' || isTyping) return;
 
     setInputValue('');
     setMessages((current) => [...current, { role: 'user', text: trimmed }]);
@@ -266,7 +283,7 @@ export default function FloatingAiAssistant({
         },
       ]);
     }
-  }, []);
+  }, [backendStatus, isTyping]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -278,9 +295,13 @@ export default function FloatingAiAssistant({
       return;
     }
 
-    if (triggerPrompt !== lastHandledTriggerPromptRef.current) {
-      lastHandledTriggerPromptRef.current = triggerPrompt;
+    if (
+      backendStatus === 'connected' &&
+      !isTyping &&
+      triggerPrompt !== lastHandledTriggerPromptRef.current
+    ) {
       const promptTimer = window.setTimeout(() => {
+        lastHandledTriggerPromptRef.current = triggerPrompt;
         setIsOpen(true);
         void handleSendPrompt(`Tell me more about ${triggerPrompt}`);
         onTriggerHandled?.();
@@ -290,7 +311,7 @@ export default function FloatingAiAssistant({
         window.clearTimeout(promptTimer);
       };
     }
-  }, [triggerPrompt, handleSendPrompt, setIsOpen, onTriggerHandled]);
+  }, [triggerPrompt, backendStatus, isTyping, handleSendPrompt, setIsOpen, onTriggerHandled]);
 
   // Status indicator helpers
   const getStatusDotColor = () => {
@@ -399,6 +420,7 @@ export default function FloatingAiAssistant({
                 className="ai-quick-prompt"
                 type="button"
                 onClick={() => handleSendPrompt(quick)}
+                disabled={isChatDisabled}
                 style={{
                   background: 'rgba(255, 255, 255, 0.08)',
                   border: '1px solid rgba(255, 255, 255, 0.12)',
@@ -406,7 +428,8 @@ export default function FloatingAiAssistant({
                   fontSize: '11px',
                   borderRadius: '999px',
                   padding: '4px 10px',
-                  cursor: 'pointer',
+                  cursor: isChatDisabled ? 'not-allowed' : 'pointer',
+                  opacity: isChatDisabled ? 0.5 : 1,
                   transition: 'background 0.15s ease',
                 }}
               >
@@ -494,8 +517,13 @@ export default function FloatingAiAssistant({
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              placeholder="Ask anything about Roel's background..."
+              placeholder={
+                backendStatus === 'waking'
+                  ? 'AI assistant is waking up...'
+                  : "Ask anything about Roel's background..."
+              }
               className="ai-chat-input"
+              disabled={isChatDisabled}
               style={{
                 flex: 1,
                 border: '1px solid rgba(255, 255, 255, 0.14)',
@@ -503,12 +531,13 @@ export default function FloatingAiAssistant({
                 padding: '8px 12px',
                 fontSize: '12px',
                 outline: 'none',
+                cursor: isChatDisabled ? 'not-allowed' : 'text',
               }}
             />
             <button
               className="ai-send-button"
               type="submit"
-              disabled={isTyping}
+              disabled={isChatDisabled}
               style={{
                 background: '#2563eb',
                 color: '#ffffff',
@@ -517,8 +546,8 @@ export default function FloatingAiAssistant({
                 padding: '8px 14px',
                 fontSize: '12px',
                 fontWeight: 600,
-                cursor: isTyping ? 'not-allowed' : 'pointer',
-                opacity: isTyping ? 0.6 : 1,
+                cursor: isChatDisabled ? 'not-allowed' : 'pointer',
+                opacity: isChatDisabled ? 0.6 : 1,
               }}
             >
               Send
