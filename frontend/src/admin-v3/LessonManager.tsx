@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { logAdminActivity } from '../lib/adminActivity';
 import { supabase } from '../lib/supabase';
 import { saveLastOpenedLesson } from '../services/readingProgress';
 import LessonImporter from './LessonImporter';
@@ -166,6 +167,7 @@ export default function LessonManager({
       : previousLesson
   );
 
+  await logAdminActivity('progress updated', 'lesson', updatedLesson.title);
   setMessage('Lesson progress saved.');
   setStatusSaving(false);
 }
@@ -257,6 +259,7 @@ export default function LessonManager({
     if (result.error) {
       setError(result.error.message);
     } else {
+      await logAdminActivity(editingId ? 'updated' : 'created', 'lesson', payload.title);
       setMessage(editingId ? 'Lesson updated.' : 'Lesson created.');
       setFormOpen(false);
       resetForm();
@@ -284,6 +287,7 @@ export default function LessonManager({
       return;
     }
 
+    await logAdminActivity('deleted', 'lesson', lesson.title);
     if (editingId === lesson.id) closeForm();
     setMessage('Lesson deleted.');
     await refreshLessons();

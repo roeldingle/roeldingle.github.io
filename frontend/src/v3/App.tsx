@@ -112,7 +112,7 @@ export default function App() {
     (firstProject, secondProject) =>
       firstProject.displayOrder - secondProject.displayOrder
   );
-  const featuredProjects = sortedProjects.slice(0, 2);
+  const featuredProjects = sortedProjects;
 
   const skillsByCategory = portfolio.skills.reduce<Record<string, Skill[]>>(
     (groups, skill) => {
@@ -173,7 +173,7 @@ export default function App() {
         />
       </div>
 
-      {/* The compact dashboard intentionally showcases the first two projects. */}
+      {/* All published projects are displayed in their configured order. */}
       <div className="v3-projects">
         <ParallelFeaturedSystems
           projects={featuredProjects}

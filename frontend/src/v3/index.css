@@ -59,11 +59,11 @@ textarea {
     "profile roles expertise"
     "projects projects projects";
   grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 0.95fr);
-  grid-template-rows: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  grid-template-rows: minmax(0, 1fr) auto;
   gap: clamp(12px, 1.4vw, 20px);
   width: min(100%, 1680px);
-  height: max(700px, 100vh);
-  height: max(700px, 100dvh);
+  min-height: max(700px, 100vh);
+  min-height: max(700px, 100dvh);
   margin: 0 auto;
   padding: clamp(16px, 1.8vw, 28px);
 }
@@ -438,8 +438,12 @@ textarea {
 
 .v3-projects-card .featured-systems-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr));
   gap: 10px;
+}
+
+.v3-projects-card {
+  height: auto !important;
 }
 
 .v3-project-card {
@@ -518,6 +522,40 @@ textarea {
 .v3-project-card button:hover {
   color: #e0ffad !important;
   transform: translateX(2px);
+}
+
+.v3-project-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.v3-project-external-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.v3-project-external-links a {
+  color: var(--v3-accent);
+  font-family: var(--v3-mono);
+  font-size: 9px;
+  font-weight: 600;
+  text-decoration: none;
+  text-underline-offset: 3px;
+}
+
+.v3-project-external-links a:hover {
+  color: #e0ffad;
+  text-decoration: underline;
+}
+
+.v3-project-external-links a:focus-visible {
+  border-radius: 2px;
+  outline: 2px solid var(--v3-accent);
+  outline-offset: 3px;
 }
 
 .v3-projects-card > div:last-child {

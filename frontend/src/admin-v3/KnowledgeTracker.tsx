@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { logAdminActivity } from '../lib/adminActivity';
 import { supabase } from '../lib/supabase';
 import ModuleManager from './ModuleManager';
 import { getResumeReadingLocation } from '../services/readingProgress';
@@ -272,6 +273,7 @@ export default function KnowledgeTracker({
     if (result.error) {
       setError(result.error.message);
     } else {
+      await logAdminActivity(editingId ? 'updated' : 'created', 'course', title);
       setMessage(editingId ? 'Course updated successfully.' : 'Course created successfully.');
       resetForm();
       setFormOpen(false);
@@ -301,6 +303,7 @@ export default function KnowledgeTracker({
       return;
     }
 
+    await logAdminActivity('deleted', 'course', course.title);
     setMessage('Course deleted.');
     if (editingId === course.id) resetForm();
     await loadCourses();

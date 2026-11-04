@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { logAdminActivity } from '../lib/adminActivity';
 import { supabase } from '../lib/supabase';
 
 type ProjectStatus = 'completed' | 'in-progress' | 'planned';
@@ -161,6 +162,7 @@ export default function ProjectsEditor() {
     if (result.error) {
       setFormError(`Save failed: ${result.error.message}`);
     } else {
+      await logAdminActivity(editingId ? 'updated' : 'created', 'project', payload.title);
       setFormOpen(false);
       setEditingId(null);
       setForm({ ...emptyProject });
@@ -178,6 +180,7 @@ export default function ProjectsEditor() {
     const { error } = await supabase.from('portfolio_projects').delete().eq('id', project.id);
     if (error) setMessage(`Delete failed: ${error.message}`);
     else {
+      await logAdminActivity('deleted', 'project', project.title);
       await loadProjects();
       setMessage('Project deleted.');
     }
@@ -195,6 +198,7 @@ export default function ProjectsEditor() {
 
     if (error) setMessage(`Publish update failed: ${error.message}`);
     else {
+      await logAdminActivity(project.is_published ? 'unpublished' : 'published', 'project', project.title);
       await loadProjects();
       setMessage(project.is_published ? 'Project moved to drafts.' : 'Project published.');
     }
@@ -261,7 +265,7 @@ export default function ProjectsEditor() {
         </div>
       )}
 
-      <div className="admin-items">
+      <div className="admin-items rd-project-grid">
         {filteredProjects.map((project) => (
           <article className="admin-item" key={project.id}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', flexWrap: 'wrap' }}>

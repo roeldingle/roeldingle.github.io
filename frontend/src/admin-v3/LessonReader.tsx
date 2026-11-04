@@ -137,6 +137,11 @@ export default function LessonReader({
             rehypePlugins={[rehypeRaw, rehypeHighlight]}
             components={{
               pre: ({ children }) => <CodeBlock>{children}</CodeBlock>,
+              table: ({ children }) => (
+                <div className="rd-markdown-table-scroll" role="region" aria-label="Scrollable table" tabIndex={0}>
+                  <table>{children}</table>
+                </div>
+              ),
             }}
           >
             {lesson.content_markdown || '*No lesson content yet.*'}

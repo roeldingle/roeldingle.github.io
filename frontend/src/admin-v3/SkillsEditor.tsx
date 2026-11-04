@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { logAdminActivity } from '../lib/adminActivity';
 import { supabase } from '../lib/supabase';
 
 interface Skill {
@@ -9,6 +10,8 @@ interface Skill {
 }
 
 type SkillForm = { name: string; category: string };
+type SkillSortOption = 'display_order' | 'name_asc' | 'name_desc' | 'category';
+const SKILLS_PER_PAGE = 18;
 
 export default function SkillsEditor() {
   const [skills, setSkills] = useState<Skill[]>([]);
@@ -18,6 +21,54 @@ export default function SkillsEditor() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState<SkillForm>({ name: '', category: '' });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [sortOption, setSortOption] = useState<SkillSortOption>('display_order');
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const categories = useMemo(
+    () => [...new Set(skills.map((skill) => skill.category.trim()).filter(Boolean))]
+      .sort((first, second) => first.localeCompare(second)),
+    [skills]
+  );
+
+  const filteredSkills = useMemo(() => {
+    const query = searchTerm.trim().toLocaleLowerCase();
+    const matches = skills.filter((skill) => {
+      const matchesSearch = !query ||
+        `${skill.name} ${skill.category}`.toLocaleLowerCase().includes(query);
+      const matchesCategory = categoryFilter === 'all' || skill.category === categoryFilter;
+      return matchesSearch && matchesCategory;
+    });
+
+    return matches.sort((first, second) => {
+      if (sortOption === 'name_asc') return first.name.localeCompare(second.name);
+      if (sortOption === 'name_desc') return second.name.localeCompare(first.name);
+      if (sortOption === 'category') {
+        return first.category.localeCompare(second.category) || first.name.localeCompare(second.name);
+      }
+      return first.display_order - second.display_order || first.name.localeCompare(second.name);
+    });
+  }, [skills, searchTerm, categoryFilter, sortOption]);
+
+  const pageCount = Math.max(1, Math.ceil(filteredSkills.length / SKILLS_PER_PAGE));
+  const visiblePage = Math.min(currentPage, pageCount);
+  const visibleSkills = filteredSkills.slice(
+    (visiblePage - 1) * SKILLS_PER_PAGE,
+    visiblePage * SKILLS_PER_PAGE
+  );
+  const hasActiveFilters = Boolean(searchTerm.trim()) || categoryFilter !== 'all';
+
+  function resetToFirstPage() {
+    setCurrentPage(1);
+  }
+
+  function clearSkillFilters() {
+    setSearchTerm('');
+    setCategoryFilter('all');
+    setSortOption('display_order');
+    setCurrentPage(1);
+  }
 
   async function loadSkills() {
     const { data, error } = await supabase
@@ -88,6 +139,7 @@ export default function SkillsEditor() {
     if (error) {
       setMessage(`Save failed: ${error.message}`);
     } else {
+      await logAdminActivity(editingId ? 'updated' : 'created', 'skill', name);
       setModalOpen(false);
       await loadSkills();
       setMessage(editingId ? 'Skill updated.' : 'Skill added successfully.');
@@ -103,49 +155,10 @@ export default function SkillsEditor() {
     const { error } = await supabase.from('portfolio_skills').delete().eq('id', skill.id);
     if (error) setMessage(`Delete failed: ${error.message}`);
     else {
+      await logAdminActivity('deleted', 'skill', skill.name);
       await loadSkills();
       setMessage('Skill deleted.');
     }
-    setSaving(false);
-  }
-
-  async function moveSkill(index: number, direction: -1 | 1) {
-    const otherIndex = index + direction;
-    if (saving || otherIndex < 0 || otherIndex >= skills.length) return;
-
-    setSaving(true);
-    setMessage('');
-    const current = skills[index];
-    const other = skills[otherIndex];
-
-    const first = await supabase
-      .from('portfolio_skills')
-      .update({ display_order: other.display_order })
-      .eq('id', current.id);
-
-    if (first.error) {
-      setMessage(`Reorder failed: ${first.error.message}`);
-      setSaving(false);
-      return;
-    }
-
-    const second = await supabase
-      .from('portfolio_skills')
-      .update({ display_order: current.display_order })
-      .eq('id', other.id);
-
-    if (second.error) {
-      const rollback = await supabase
-        .from('portfolio_skills')
-        .update({ display_order: current.display_order })
-        .eq('id', current.id);
-      setMessage(rollback.error
-        ? `Reorder failed; automatic rollback also failed: ${rollback.error.message}. Refresh and check ordering.`
-        : `Reorder failed: ${second.error.message}`);
-    } else {
-      setMessage('Skills reordered.');
-    }
-    await loadSkills();
     setSaving(false);
   }
 
@@ -156,29 +169,102 @@ export default function SkillsEditor() {
       <div className="rd-skills-heading">
         <div>
           <h2>Technical Skills</h2>
-          <p>Manage the skills and categories displayed on your portfolio.</p>
+          <p>Manage and organize your skills by category.</p>
+          <span className="rd-skills-total">
+            {skills.length} {skills.length === 1 ? 'skill' : 'skills'} across {categories.length} {categories.length === 1 ? 'category' : 'categories'}
+          </span>
         </div>
         <button type="button" onClick={openAdd} disabled={saving}>+ Add Skill</button>
       </div>
 
       {skills.length === 0 && <p>No skills yet. Add your first technical skill.</p>}
 
+      {skills.length > 0 && (
+        <div className="rd-skills-toolbar" role="search" aria-label="Filter and sort skills">
+          <div className="rd-skills-search">
+            <label htmlFor="rd-skills-search">Search skills</label>
+            <input
+              id="rd-skills-search"
+              type="search"
+              placeholder="Search skill or category..."
+              value={searchTerm}
+              onChange={(event) => {
+                setSearchTerm(event.target.value);
+                resetToFirstPage();
+              }}
+            />
+          </div>
+          <div className="rd-skills-filter">
+            <label htmlFor="rd-skills-category">Category</label>
+            <select
+              id="rd-skills-category"
+              value={categoryFilter}
+              onChange={(event) => {
+                setCategoryFilter(event.target.value);
+                resetToFirstPage();
+              }}
+            >
+              <option value="all">All categories</option>
+              {categories.map((category) => <option key={category} value={category}>{category}</option>)}
+            </select>
+          </div>
+          <div className="rd-skills-filter">
+            <label htmlFor="rd-skills-sort">Sort by</label>
+            <select
+              id="rd-skills-sort"
+              value={sortOption}
+              onChange={(event) => {
+                setSortOption(event.target.value as SkillSortOption);
+                resetToFirstPage();
+              }}
+            >
+              <option value="display_order">Default order</option>
+              <option value="name_asc">Name A–Z</option>
+              <option value="name_desc">Name Z–A</option>
+              <option value="category">Category</option>
+            </select>
+          </div>
+          <div className="rd-skills-filter-summary">
+            <span>Showing {filteredSkills.length === 0 ? 0 : (visiblePage - 1) * SKILLS_PER_PAGE + 1}–{Math.min(visiblePage * SKILLS_PER_PAGE, filteredSkills.length)} of {filteredSkills.length}</span>
+            {(hasActiveFilters || sortOption !== 'display_order') && (
+              <button type="button" onClick={clearSkillFilters}>Reset</button>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="rd-skills-list">
-        {skills.map((skill, index) => (
+        {visibleSkills.map((skill) => (
           <div className="rd-skills-row" key={skill.id}>
             <div className="rd-skills-details">
               <strong>{skill.name}</strong>
               <span>{skill.category}</span>
             </div>
             <div className="rd-skills-actions">
-              <button type="button" disabled={saving || index === 0} onClick={() => void moveSkill(index, -1)} aria-label={`Move ${skill.name} up`} title="Move up">↑</button>
-              <button type="button" disabled={saving || index === skills.length - 1} onClick={() => void moveSkill(index, 1)} aria-label={`Move ${skill.name} down`} title="Move down">↓</button>
               <button type="button" disabled={saving} onClick={() => openEdit(skill)}>Edit</button>
               <button type="button" disabled={saving} onClick={() => void deleteSkill(skill)}>Delete</button>
             </div>
           </div>
         ))}
+        {filteredSkills.length === 0 && skills.length > 0 && (
+          <div className="rd-skills-empty">
+            <p>No skills match your search or category.</p>
+            <button type="button" onClick={clearSkillFilters}>Clear filters</button>
+          </div>
+        )}
       </div>
+
+      {pageCount > 1 && (
+        <nav className="rd-skills-pagination" aria-label="Skills pages">
+          <button type="button" disabled={visiblePage === 1} onClick={() => setCurrentPage(visiblePage - 1)}>
+            Previous
+          </button>
+          <span>Page {visiblePage} of {pageCount}</span>
+          <button type="button" disabled={visiblePage === pageCount} onClick={() => setCurrentPage(visiblePage + 1)}>
+            Next
+          </button>
+        </nav>
+      )}
 
       {message && <p role="status" className="rd-skills-message">{message}</p>}
 

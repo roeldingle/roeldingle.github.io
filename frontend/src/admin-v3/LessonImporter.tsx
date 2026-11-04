@@ -1,5 +1,6 @@
 
 import { useState } from 'react';
+import { logAdminActivity } from '../lib/adminActivity';
 import { supabase } from '../lib/supabase';
 
 type LessonStatus = 'not_started' | 'in_progress' | 'completed';
@@ -151,6 +152,7 @@ export default function LessonImporter({
 
       if (insertError) throw insertError;
 
+      await logAdminActivity('imported', 'lessons', `${safeLessons.length} lessons`);
       await onImported();
 
       setMessage('Import completed. Existing lessons were preserved.');

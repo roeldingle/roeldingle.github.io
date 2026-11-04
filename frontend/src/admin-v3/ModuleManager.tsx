@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { logAdminActivity } from '../lib/adminActivity';
 import { supabase } from '../lib/supabase';
 import LessonManager from './LessonManager';
 import type { ResumeReadingTarget } from './resumeReadingTypes';
@@ -221,6 +222,7 @@ export default function ModuleManager({
     if (result.error) {
       setError(result.error.message);
     } else {
+      await logAdminActivity(editingId ? 'updated' : 'created', 'module', title);
       setMessage(editingId ? 'Module updated.' : 'Module created.');
       setFormOpen(false);
       resetForm();
@@ -248,6 +250,7 @@ export default function ModuleManager({
       return;
     }
 
+    await logAdminActivity('deleted', 'module', module.title);
     if (editingId === module.id) closeForm();
 
     setMessage('Module deleted.');
@@ -294,7 +297,7 @@ export default function ModuleManager({
 }
 
   return (
-    <div className="rd-overview">
+    <div className="rd-module-page">
       <button
         type="button"
         className="rd-back-button"
@@ -303,10 +306,11 @@ export default function ModuleManager({
         &larr; Back to Courses
       </button>
 
-      <div className="rd-welcome">
+      <header className="rd-module-page-header">
+        <p className="rd-module-page-eyebrow">COURSE MODULES</p>
         <h2>{courseTitle}</h2>
         <p>Manage course modules and their learning sequence.</p>
-      </div>
+      </header>
 
       {error && <p role="alert" className="rd-knowledge-error">{error}</p>}
       {message && <p role="status" className="rd-knowledge-success">{message}</p>}

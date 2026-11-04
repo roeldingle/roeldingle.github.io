@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { logAdminActivity } from '../lib/adminActivity';
 import { supabase } from '../lib/supabase';
 
 interface Role {
@@ -81,6 +82,7 @@ export default function RolesEditor() {
     if (error) {
       setMessage(`${editingRole ? 'Update' : 'Add'} failed: ${error.message}`);
     } else {
+      await logAdminActivity(editingRole ? 'updated' : 'created', 'role', cleanTitle);
       setModalOpen(false);
       setEditingRole(null);
       setTitle('');
@@ -97,6 +99,7 @@ export default function RolesEditor() {
     const { error } = await supabase.from('portfolio_roles').delete().eq('id', role.id);
     if (error) setMessage(`Delete failed: ${error.message}`);
     else {
+      await logAdminActivity('deleted', 'role', role.title);
       await loadRoles();
       setMessage('Role deleted.');
     }
@@ -122,6 +125,7 @@ export default function RolesEditor() {
     if (second.error) {
       setMessage(`Reorder failed: ${second.error.message}. Refreshing role order.`);
     } else {
+      await logAdminActivity('reordered', 'roles', 'Professional roles');
       setMessage('Roles reordered.');
     }
     await loadRoles();
